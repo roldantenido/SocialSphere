@@ -16,6 +16,7 @@ import Marketplace from "@/pages/marketplace";
 import Gaming from "@/pages/gaming";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
+import DockerWizard from "@/pages/docker-wizard";
 import Discover from "@/pages/discover";
 
 function AuthenticatedApp() {
@@ -57,6 +58,7 @@ function AuthenticatedApp() {
       <Route path="/gaming" component={Gaming} />
       <Route path="/profile/:userId?" component={Profile} />
       <Route path="/admin" component={Admin} />
+      <Route path="/docker-wizard" component={DockerWizard} />
       <Route component={NotFound} />
     </Switch>
   );
