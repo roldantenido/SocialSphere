@@ -267,11 +267,25 @@ export default function Login() {
       {/* Right Side - Background Image with Content */}
       <div className="flex-1 bg-gradient-to-br from-primary via-blue-600 to-purple-700 flex items-center justify-center p-12 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full"></div>
-          <div className="absolute top-40 right-32 w-24 h-24 bg-white rounded-full"></div>
-          <div className="absolute bottom-32 left-40 w-28 h-28 bg-white rounded-full"></div>
-          <div className="absolute bottom-20 right-20 w-36 h-36 bg-white rounded-full"></div>
+        <div className="absolute inset-0 opacity-15">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">
+            <i className="fab fa-facebook text-white text-4xl"></i>
+          </div>
+          <div className="absolute top-40 right-32 w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
+            <i className="fab fa-twitter text-white text-3xl"></i>
+          </div>
+          <div className="absolute bottom-32 left-40 w-28 h-28 bg-white/20 rounded-full flex items-center justify-center">
+            <i className="fab fa-instagram text-white text-3xl"></i>
+          </div>
+          <div className="absolute bottom-20 right-20 w-36 h-36 bg-white/20 rounded-full flex items-center justify-center">
+            <i className="fab fa-linkedin text-white text-4xl"></i>
+          </div>
+          <div className="absolute top-1/2 left-1/3 w-20 h-20 bg-white/10 rounded-full flex items-center justify-center">
+            <i className="fas fa-share-nodes text-white text-2xl"></i>
+          </div>
+          <div className="absolute top-1/3 right-1/4 w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
+            <i className="fas fa-heart text-white text-xl"></i>
+          </div>
         </div>
 
         {/* Content */}
