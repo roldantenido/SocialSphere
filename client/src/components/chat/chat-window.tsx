@@ -85,7 +85,7 @@ export function ChatWindow({ onClose, recipientId = 1 }: ChatWindowProps) {
   if (!recipient || !currentUser) return null;
 
   return (
-    <Card className="fixed bottom-4 right-4 w-80 shadow-2xl border" style={{ height: "400px" }}>
+    <Card className="fixed bottom-4 right-4 w-80 shadow-2xl border dark:border-gray-700 dark:bg-gray-800" style={{ height: "400px" }}>
       <CardHeader className="flex flex-row items-center justify-between p-4 bg-primary text-white rounded-t-lg">
         <div className="flex items-center space-x-2">
           <Avatar className="h-8 w-8">
@@ -127,7 +127,7 @@ export function ChatWindow({ onClose, recipientId = 1 }: ChatWindowProps) {
                   className={`max-w-xs px-4 py-2 rounded-2xl ${
                     isFromCurrentUser
                       ? "bg-primary text-white"
-                      : "bg-gray-100 text-gray-800"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                   }`}
                 >
                   <p className="text-sm">{msg.content}</p>
@@ -145,7 +145,7 @@ export function ChatWindow({ onClose, recipientId = 1 }: ChatWindowProps) {
         </div>
 
         {/* Message Input */}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t dark:border-gray-700">
           <div className="flex items-center space-x-2">
             <Input
               placeholder="Type a message..."

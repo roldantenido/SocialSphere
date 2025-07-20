@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getAuthHeaders } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { MessageCircle, UserCheck, UserMinus, Eye } from "lucide-react";
+import { Link } from "wouter";
 import type { User } from "@shared/schema";
 
 interface FriendCardProps {
@@ -78,13 +80,22 @@ export function FriendCard({ user, type, onAction }: FriendCardProps) {
     switch (type) {
       case "suggestion":
         return (
-          <Button
-            onClick={() => sendRequestMutation.mutate()}
-            disabled={sendRequestMutation.isPending}
-            className="w-full"
-          >
-            {sendRequestMutation.isPending ? "Sending..." : "Add Friend"}
-          </Button>
+          <div className="space-y-2">
+            <Link href={`/profile/${user.id}`}>
+              <Button variant="outline" className="w-full">
+                <Eye className="h-4 w-4 mr-2" />
+                View Profile
+              </Button>
+            </Link>
+            <Button
+              onClick={() => sendRequestMutation.mutate()}
+              disabled={sendRequestMutation.isPending}
+              className="w-full"
+            >
+              <UserCheck className="h-4 w-4 mr-2" />
+              {sendRequestMutation.isPending ? "Sending..." : "Add Friend"}
+            </Button>
+          </div>
         );
       
       case "request":
@@ -110,9 +121,17 @@ export function FriendCard({ user, type, onAction }: FriendCardProps) {
       
       case "friend":
         return (
-          <Button variant="outline" className="w-full">
-            View Profile
-          </Button>
+          <div className="flex gap-2">
+            <Link href={`/profile/${user.id}`} className="flex-1">
+              <Button variant="outline" className="w-full">
+                <Eye className="h-4 w-4 mr-2" />
+                View Profile
+              </Button>
+            </Link>
+            <Button variant="outline" size="icon">
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </div>
         );
       
       default:

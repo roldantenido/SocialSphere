@@ -1,13 +1,17 @@
 # Replit.md
 
 ## Recent Changes
-- **January 20, 2025**: Implemented comprehensive dark mode support throughout the entire application
-  - Added ThemeProvider component with theme context and localStorage persistence
+- **January 20, 2025**: Implemented comprehensive dark mode support and profile interaction features
+  - Added complete dark mode support throughout the entire application with ThemeProvider component
   - Created theme toggle functionality in navbar with sun/moon icon switching
-  - Updated all pages (home, discover, friends, login, groups, gaming, marketplace, profile, admin) with dark mode backgrounds
-  - Applied dark mode styling to navbar, sidebar, and all UI components
-  - Enhanced login page with gradient backgrounds that adapt to dark mode
-  - Updated CSS variables for proper dark/light theme support
+  - Updated all pages and components with proper dark mode styling and backgrounds
+  - Enhanced profile viewing and interaction capabilities:
+    - Added chat functionality for friends directly from profile pages
+    - Implemented friend request system with proper status tracking (friends, pending, not connected)
+    - Updated discover page with enhanced user cards including view profile and connect actions
+    - Enhanced friend cards with view profile and message buttons
+    - Added fixed-position chat window with dark mode support
+    - Integrated real-time chat with message polling and proper UI feedback
 
 ## Overview
 
@@ -101,9 +105,11 @@ The application uses a PostgreSQL database with the following main entities:
 5. PostCard components render updated feed
 
 ### Real-time Features
-- **Chat**: Polling-based message updates (3-second intervals)
+- **Chat**: Polling-based message updates (3-second intervals) with fixed-position chat window
+- **Profile Interaction**: View any user profile and initiate chat (friends only) or send friend requests
 - **Feed Updates**: Manual refresh via TanStack Query
-- **Friendship Status**: Real-time updates on accept/decline
+- **Friendship Status**: Real-time updates on accept/decline with proper status tracking
+- **User Discovery**: Enhanced search and discovery with connect/view profile actions
 
 ## External Dependencies
 

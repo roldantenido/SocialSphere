@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { getAuthHeaders } from "@/lib/auth";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/layout/navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,12 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Users, FileText, Gamepad2, Verified, Star, Crown, UserPlus, Plus } from "lucide-react";
+import { Search, Users, FileText, Gamepad2, Verified, Star, Crown, UserPlus, Plus, MessageCircle } from "lucide-react";
 import type { SearchResults, UserWithFriendCount, GroupWithCreator, PageWithCreator, Game } from "@shared/schema";
 
 export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const { toast } = useToast();
 
   // Search results query
   const { data: searchResults, isLoading: searchLoading } = useQuery({
@@ -75,6 +79,32 @@ export default function Discover() {
     },
   });
 
+  const sendFriendRequestMutation = useMutation({
+    mutationFn: async (friendId: number) => {
+      const response = await fetch("/api/friends/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ friendId }),
+      });
+      if (!response.ok) throw new Error("Failed to send friend request");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+      toast({ title: "Success", description: "Friend request sent!" });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send friend request",
+        variant: "destructive",
+      });
+    },
+  });
+
   const LoadingSkeleton = ({ count = 6 }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {Array(count).fill(0).map((_, i) => (
@@ -111,14 +141,31 @@ export default function Discover() {
             {user.work && <p className="text-xs text-gray-400 truncate">{user.work}</p>}
           </div>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <Badge variant="secondary" className="text-xs">
             {user.friendsCount || 0} friends
           </Badge>
-          <Button size="sm" variant="outline">
+          <Link href={`/profile/${user.id}`}>
+            <Button size="sm" variant="outline">
+              View Profile
+            </Button>
+          </Link>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            onClick={() => sendFriendRequestMutation.mutate(user.id)}
+            disabled={sendFriendRequestMutation.isPending}
+            className="flex-1"
+          >
             <UserPlus className="h-4 w-4 mr-1" />
-            Connect
+            {sendFriendRequestMutation.isPending ? "Sending..." : "Connect"}
           </Button>
+          <Link href={`/profile/${user.id}`}>
+            <Button size="sm" variant="outline">
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

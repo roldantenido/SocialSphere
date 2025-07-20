@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Navbar } from "@/components/layout/navbar";
 import { CreatePost } from "@/components/post/create-post";
 import { PostCard } from "@/components/post/post-card";
+import { ChatWindow } from "@/components/chat/chat-window";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import { getAuthHeaders } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Camera, MapPin, Briefcase, Calendar, Settings } from "lucide-react";
+import { Camera, MapPin, Briefcase, Calendar, Settings, MessageCircle, UserPlus, UserMinus } from "lucide-react";
 import type { PostWithUser, UserWithFriendCount } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
@@ -38,6 +39,7 @@ type UpdateProfileData = z.infer<typeof updateProfileSchema>;
 export default function Profile() {
   const { userId } = useParams<{ userId?: string }>();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const { toast } = useToast();
 
   // Get current user to check if this is their profile
@@ -48,6 +50,29 @@ export default function Profile() {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error("Failed to fetch current user");
+      return response.json();
+    },
+  });
+
+  // Check friendship status with current user
+  const { data: friends = [] } = useQuery({
+    queryKey: ["/api/friends"],
+    queryFn: async () => {
+      const response = await fetch("/api/friends", {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch friends");
+      return response.json();
+    },
+  });
+
+  const { data: friendRequests = [] } = useQuery({
+    queryKey: ["/api/friends/requests"],
+    queryFn: async () => {
+      const response = await fetch("/api/friends/requests", {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Failed to fetch friend requests");
       return response.json();
     },
   });
@@ -138,8 +163,49 @@ export default function Profile() {
     },
   });
 
+  const sendFriendRequestMutation = useMutation({
+    mutationFn: async (friendId: number) => {
+      const response = await fetch("/api/friends/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ friendId }),
+      });
+      if (!response.ok) throw new Error("Failed to send friend request");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/friends"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/friends/requests"] });
+      toast({ title: "Success", description: "Friend request sent!" });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send friend request",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: UpdateProfileData) => {
     updateProfileMutation.mutate(data);
+  };
+
+  // Determine friendship status
+  const isFriend = friends.some((friend: any) => friend.id === profileUserId);
+  const hasRequestedFriendship = friendRequests.some((req: any) => req.id === profileUserId);
+  
+  const handleSendFriendRequest = () => {
+    if (profileUserId) {
+      sendFriendRequestMutation.mutate(profileUserId);
+    }
+  };
+
+  const handleStartChat = () => {
+    setIsChatOpen(true);
   };
 
   if (userLoading || !user) {
@@ -212,13 +278,13 @@ export default function Profile() {
               
               <div className="flex justify-between items-start">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                     {user.firstName} {user.lastName}
                   </h1>
                   {user.bio && (
-                    <p className="text-gray-600 mb-2">{user.bio}</p>
+                    <p className="text-gray-600 dark:text-gray-300 mb-2">{user.bio}</p>
                   )}
-                  <p className="text-sm text-gray-500">{user.friendsCount} friends</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{user.friendsCount} friends</p>
                 </div>
                 <div className="flex space-x-2">
                   {isOwnProfile ? (
@@ -345,8 +411,33 @@ export default function Profile() {
                     </>
                   ) : (
                     <>
-                      <Button>Add Friend</Button>
-                      <Button variant="outline">Message</Button>
+                      {isFriend ? (
+                        <Button variant="outline" disabled>
+                          <UserMinus className="h-4 w-4 mr-2" />
+                          Friends
+                        </Button>
+                      ) : hasRequestedFriendship ? (
+                        <Button variant="outline" disabled>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Request Sent
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={handleSendFriendRequest}
+                          disabled={sendFriendRequestMutation.isPending}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          {sendFriendRequestMutation.isPending ? "Sending..." : "Add Friend"}
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        onClick={handleStartChat}
+                        disabled={!isFriend}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Message
+                      </Button>
                     </>
                   )}
                 </div>
@@ -367,19 +458,19 @@ export default function Profile() {
                   <div className="space-y-3 text-sm">
                     {user.work && (
                       <div className="flex items-center space-x-2">
-                        <Briefcase className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-700">{user.work}</span>
+                        <Briefcase className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-gray-700 dark:text-gray-300">{user.work}</span>
                       </div>
                     )}
                     {user.location && (
                       <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-700">{user.location}</span>
+                        <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-gray-700 dark:text-gray-300">{user.location}</span>
                       </div>
                     )}
                     <div className="flex items-center space-x-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-700">
+                      <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-gray-700 dark:text-gray-300">
                         Joined {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
                       </span>
                     </div>
@@ -407,7 +498,7 @@ export default function Profile() {
                         />
                       ))}
                     {userPosts.filter(post => post.imageUrl).length === 0 && (
-                      <div className="col-span-3 text-center py-4 text-gray-500">
+                      <div className="col-span-3 text-center py-4 text-gray-500 dark:text-gray-400">
                         No photos yet
                       </div>
                     )}
@@ -445,7 +536,7 @@ export default function Profile() {
                 ) : userPosts.length === 0 ? (
                   <Card>
                     <CardContent className="p-8 text-center">
-                      <p className="text-gray-500">
+                      <p className="text-gray-500 dark:text-gray-400">
                         {isOwnProfile ? "You haven't posted anything yet." : "This user hasn't posted anything yet."}
                       </p>
                     </CardContent>
@@ -460,6 +551,16 @@ export default function Profile() {
           </div>
         </div>
       </div>
+      
+      {/* Chat Window */}
+      {isChatOpen && profileUserId && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <ChatWindow
+            recipientId={profileUserId}
+            onClose={() => setIsChatOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
