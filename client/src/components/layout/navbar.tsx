@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search, Shield, Compass } from "lucide-react";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Navbar() {
   const [location] = useLocation();
@@ -95,6 +96,7 @@ export function Navbar() {
 
             {/* Right side */}
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="sm"
