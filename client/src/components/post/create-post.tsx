@@ -63,18 +63,18 @@ export function CreatePost() {
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        // Validate file size - stricter limits for reels
+        // Validate file size - more reasonable limits for base64 encoding
         let maxSize;
         if (type === "image") {
-          maxSize = 10 * 1024 * 1024; // 10MB for images
+          maxSize = 5 * 1024 * 1024; // 5MB for images (becomes ~7MB as base64)
         } else if (isReel) {
-          maxSize = 50 * 1024 * 1024; // 50MB for reels
+          maxSize = 15 * 1024 * 1024; // 15MB for reels (becomes ~20MB as base64)
         } else {
-          maxSize = 100 * 1024 * 1024; // 100MB for regular videos
+          maxSize = 25 * 1024 * 1024; // 25MB for regular videos (becomes ~33MB as base64)
         }
         
         if (file.size > maxSize) {
-          const sizeLimit = isReel ? "50MB" : type === "image" ? "10MB" : "100MB";
+          const sizeLimit = isReel ? "15MB" : type === "image" ? "5MB" : "25MB";
           toast({
             title: "File too large",
             description: `${isReel ? "Reels" : type === "image" ? "Images" : "Videos"} must be smaller than ${sizeLimit}`,
