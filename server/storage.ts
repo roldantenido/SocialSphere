@@ -96,6 +96,17 @@ export class MemStorage implements IStorage {
     // Create sample users
     const sampleUsers = [
       {
+        username: "admin",
+        email: "admin@example.com",
+        password: "admin123",
+        firstName: "Admin",
+        lastName: "User",
+        bio: "Platform Administrator",
+        profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+        location: "System Admin",
+        work: "Platform Administrator"
+      },
+      {
         username: "johndoe",
         email: "john@example.com",
         password: "password123",
@@ -113,7 +124,9 @@ export class MemStorage implements IStorage {
         firstName: "Sarah",
         lastName: "Johnson",
         bio: "Hiking enthusiast and nature lover",
-        profilePhoto: "https://images.unsplash.com/photo-1494790108755-2616b612b550?w=100&h=100&fit=crop&crop=face"
+        profilePhoto: "https://images.unsplash.com/photo-1494790108755-2616b612b550?w=100&h=100&fit=crop&crop=face",
+        location: "Seattle, WA",
+        work: "Nature Photographer"
       },
       {
         username: "mikechen",
@@ -122,7 +135,9 @@ export class MemStorage implements IStorage {
         firstName: "Mike",
         lastName: "Chen",
         bio: "Team player and success driven",
-        profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face"
+        profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+        location: "San Francisco, CA",
+        work: "Product Manager"
       }
     ];
 
@@ -130,7 +145,12 @@ export class MemStorage implements IStorage {
       const user: User = {
         ...userData,
         id: this.currentUserId++,
+        bio: userData.bio || null,
+        profilePhoto: userData.profilePhoto || null,
         coverPhoto: null,
+        location: userData.location || null,
+        work: userData.work || null,
+        isAdmin: userData.email === "admin@example.com", // Make admin user an admin
         createdAt: new Date(),
       };
       this.users.set(user.id, user);
@@ -154,6 +174,12 @@ export class MemStorage implements IStorage {
     const user: User = {
       ...insertUser,
       id: this.currentUserId++,
+      bio: insertUser.bio ?? null,
+      profilePhoto: insertUser.profilePhoto ?? null,
+      coverPhoto: insertUser.coverPhoto ?? null,
+      location: insertUser.location ?? null,
+      work: insertUser.work ?? null,
+      isAdmin: false,
       createdAt: new Date(),
     };
     this.users.set(user.id, user);
@@ -185,6 +211,7 @@ export class MemStorage implements IStorage {
     const post: Post = {
       ...insertPost,
       id: this.currentPostId++,
+      imageUrl: insertPost.imageUrl ?? null,
       likesCount: 0,
       commentsCount: 0,
       sharesCount: 0,

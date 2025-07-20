@@ -38,7 +38,7 @@ export const authStorage = {
   }
 };
 
-export const getAuthHeaders = () => {
+export const getAuthHeaders = (): Record<string, string> => {
   const sessionId = authStorage.getSessionId();
   return sessionId ? { Authorization: `Bearer ${sessionId}` } : {};
 };

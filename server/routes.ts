@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -9,6 +9,15 @@ import {
   insertFriendshipSchema 
 } from "@shared/schema";
 import { z } from "zod";
+
+// Extend Express Request interface to include userId
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: number;
+    }
+  }
+}
 
 // Simple session management
 const sessions = new Map<string, { userId: number; expires: Date }>();
@@ -26,7 +35,7 @@ function validateSession(sessionId: string): number | null {
   return session.userId;
 }
 
-function requireAuth(req: any, res: any, next: any) {
+function requireAuth(req: Request, res: Response, next: NextFunction) {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
   const userId = sessionId ? validateSession(sessionId) : null;
   
@@ -38,8 +47,8 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
-async function requireAdmin(req: any, res: any, next: any) {
-  const user = await storage.getUserWithFriendCount(req.userId);
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const user = await storage.getUserWithFriendCount(req.userId!);
   if (!user || !user.isAdmin) {
     return res.status(403).json({ message: "Admin access required" });
   }
@@ -104,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/auth/me", requireAuth, async (req, res) => {
-    const user = await storage.getUserWithFriendCount(req.userId);
+    const user = await storage.getUserWithFriendCount(req.userId!);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -120,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const postsWithLikeStatus = await Promise.all(
       posts.map(async (post) => ({
         ...post,
-        isLiked: await storage.isPostLiked(req.userId, post.id)
+        isLiked: await storage.isPostLiked(req.userId!, post.id)
       }))
     );
     
@@ -131,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const postData = insertPostSchema.parse({
         ...req.body,
-        userId: req.userId
+        userId: req.userId!
       });
       
       const post = await storage.createPost(postData);
@@ -145,13 +154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/posts/:postId/like", requireAuth, async (req, res) => {
     try {
       const postId = parseInt(req.params.postId);
-      const isLiked = await storage.isPostLiked(req.userId, postId);
+      const isLiked = await storage.isPostLiked(req.userId!, postId);
       
       if (isLiked) {
-        await storage.deleteLike(req.userId, postId);
+        await storage.deleteLike(req.userId!, postId);
         res.json({ liked: false });
       } else {
-        await storage.createLike({ userId: req.userId, postId });
+        await storage.createLike({ userId: req.userId!, postId });
         res.json({ liked: true });
       }
     } catch (error) {
@@ -170,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.postId);
       const commentData = insertCommentSchema.parse({
         ...req.body,
-        userId: req.userId,
+        userId: req.userId!,
         postId
       });
       
@@ -183,17 +192,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Friends routes
   app.get("/api/friends", requireAuth, async (req, res) => {
-    const friends = await storage.getUserFriends(req.userId);
+    const friends = await storage.getUserFriends(req.userId!);
     res.json(friends);
   });
 
   app.get("/api/friends/requests", requireAuth, async (req, res) => {
-    const requests = await storage.getFriendRequests(req.userId);
+    const requests = await storage.getFriendRequests(req.userId!);
     res.json(requests);
   });
 
   app.get("/api/friends/suggestions", requireAuth, async (req, res) => {
-    const suggestions = await storage.getFriendSuggestions(req.userId);
+    const suggestions = await storage.getFriendSuggestions(req.userId!);
     res.json(suggestions);
   });
 
@@ -206,13 +215,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if friendship already exists
-      const existing = await storage.getFriendship(req.userId, friendId);
+      const existing = await storage.getFriendship(req.userId!, friendId);
       if (existing) {
         return res.status(400).json({ message: "Friendship already exists" });
       }
 
       const friendship = await storage.createFriendship({
-        userId: req.userId,
+        userId: req.userId!,
         friendId,
         status: 'pending'
       });
@@ -227,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { friendId, action } = req.body; // action: 'accept' or 'decline'
       
-      await storage.updateFriendshipStatus(friendId, req.userId, 
+      await storage.updateFriendshipStatus(friendId, req.userId!, 
         action === 'accept' ? 'accepted' : 'declined');
       
       res.json({ message: `Friend request ${action}ed` });
@@ -265,7 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return obj;
         }, {} as any);
 
-      const updatedUser = await storage.updateUser(req.userId, updates);
+      const updatedUser = await storage.updateUser(req.userId!, updates);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -280,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat routes (basic implementation)
   app.get("/api/chat/:userId", requireAuth, async (req, res) => {
     const otherUserId = parseInt(req.params.userId);
-    const messages = await storage.getChatMessages(req.userId, otherUserId);
+    const messages = await storage.getChatMessages(req.userId!, otherUserId);
     res.json(messages);
   });
 
@@ -290,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { content } = req.body;
       
       const message = await storage.createChatMessage({
-        senderId: req.userId,
+        senderId: req.userId!,
         receiverId,
         content
       });
