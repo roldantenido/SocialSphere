@@ -21,7 +21,10 @@ import {
   type CommentWithUser,
   type UserWithFriendCount
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 
+// Interface for storage operations
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
@@ -30,18 +33,22 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   getUserWithFriendCount(id: number): Promise<UserWithFriendCount | undefined>;
+  getAllUsers(): Promise<User[]>;
+  deleteUser(id: number): Promise<boolean>;
 
   // Posts
   createPost(post: InsertPost): Promise<Post>;
   getPosts(): Promise<PostWithUser[]>;
+  getPostsByUser(userId: number): Promise<PostWithUser[]>;
   getUserPosts(userId: number): Promise<PostWithUser[]>;
-  getPost(id: number): Promise<PostWithUser | undefined>;
-  updatePostCounts(postId: number, field: 'likesCount' | 'commentsCount' | 'sharesCount', increment: number): Promise<void>;
+  getAllPosts(): Promise<PostWithUser[]>;
+  getPost(id: number): Promise<Post | undefined>;
+  deletePost(id: number): Promise<boolean>;
 
   // Friendships
   createFriendship(friendship: InsertFriendship): Promise<Friendship>;
   getFriendship(userId: number, friendId: number): Promise<Friendship | undefined>;
-  updateFriendshipStatus(userId: number, friendId: number, status: string): Promise<void>;
+  updateFriendshipStatus(userId: number, friendId: number, status: 'accepted' | 'declined'): Promise<void>;
   getUserFriends(userId: number): Promise<User[]>;
   getFriendRequests(userId: number): Promise<User[]>;
   getFriendSuggestions(userId: number): Promise<User[]>;
@@ -55,446 +62,468 @@ export interface IStorage {
   createComment(comment: InsertComment): Promise<Comment>;
   getPostComments(postId: number): Promise<CommentWithUser[]>;
 
-  // Chat
+  // Chat Messages
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(userId1: number, userId2: number): Promise<ChatMessage[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private posts: Map<number, Post>;
-  private friendships: Map<string, Friendship>;
-  private likes: Map<string, Like>;
-  private comments: Map<number, Comment>;
-  private chatMessages: Map<number, ChatMessage>;
-  private currentUserId: number;
-  private currentPostId: number;
-  private currentFriendshipId: number;
-  private currentLikeId: number;
-  private currentCommentId: number;
-  private currentChatMessageId: number;
-
+export class DatabaseStorage implements IStorage {
   constructor() {
-    this.users = new Map();
-    this.posts = new Map();
-    this.friendships = new Map();
-    this.likes = new Map();
-    this.comments = new Map();
-    this.chatMessages = new Map();
-    this.currentUserId = 1;
-    this.currentPostId = 1;
-    this.currentFriendshipId = 1;
-    this.currentLikeId = 1;
-    this.currentCommentId = 1;
-    this.currentChatMessageId = 1;
-
     // Initialize with some sample users
     this.initializeSampleData();
   }
 
-  private initializeSampleData() {
-    // Create sample users
-    const sampleUsers = [
-      {
-        username: "admin",
-        email: "admin@example.com",
-        password: "admin123",
-        firstName: "Admin",
-        lastName: "User",
-        bio: "Platform Administrator",
-        profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-        location: "System Admin",
-        work: "Platform Administrator"
-      },
-      {
-        username: "johndoe",
-        email: "john@example.com",
-        password: "password123",
-        firstName: "John",
-        lastName: "Doe",
-        bio: "Software Developer | Photography Enthusiast | Adventure Seeker",
-        profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-        location: "New York, NY",
-        work: "Software Developer at TechCorp"
-      },
-      {
-        username: "sarahjohnson",
-        email: "sarah@example.com", 
-        password: "password123",
-        firstName: "Sarah",
-        lastName: "Johnson",
-        bio: "Hiking enthusiast and nature lover",
-        profilePhoto: "https://images.unsplash.com/photo-1494790108755-2616b612b550?w=100&h=100&fit=crop&crop=face",
-        location: "Seattle, WA",
-        work: "Nature Photographer"
-      },
-      {
-        username: "mikechen",
-        email: "mike@example.com",
-        password: "password123", 
-        firstName: "Mike",
-        lastName: "Chen",
-        bio: "Team player and success driven",
-        profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-        location: "San Francisco, CA",
-        work: "Product Manager"
+  private async initializeSampleData() {
+    try {
+      // Check if users already exist
+      const existingUsers = await db.select().from(users).limit(1);
+      if (existingUsers.length > 0) {
+        return; // Data already initialized
       }
-    ];
 
-    sampleUsers.forEach(userData => {
-      const user: User = {
-        ...userData,
-        id: this.currentUserId++,
-        bio: userData.bio || null,
-        profilePhoto: userData.profilePhoto || null,
-        coverPhoto: null,
-        location: userData.location || null,
-        work: userData.work || null,
-        isAdmin: userData.email === "admin@example.com", // Make admin user an admin
-        createdAt: new Date(),
-      };
-      this.users.set(user.id, user);
-    });
+      // Create sample users
+      const sampleUsers = [
+        {
+          username: "admin",
+          email: "admin@example.com",
+          password: "admin123",
+          firstName: "Admin",
+          lastName: "User",
+          bio: "Platform Administrator",
+          profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+          location: "System Admin",
+          work: "Platform Administrator",
+          isAdmin: true
+        },
+        {
+          username: "johndoe",
+          email: "john@example.com",
+          password: "password123",
+          firstName: "John",
+          lastName: "Doe",
+          bio: "Software Developer | Photography Enthusiast | Adventure Seeker",
+          profilePhoto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+          location: "New York, NY",
+          work: "Software Developer at TechCorp",
+          isAdmin: false
+        },
+        {
+          username: "sarahjohnson",
+          email: "sarah@example.com", 
+          password: "password123",
+          firstName: "Sarah",
+          lastName: "Johnson",
+          bio: "Hiking enthusiast and nature lover",
+          profilePhoto: "https://images.unsplash.com/photo-1494790108755-2616b612b550?w=100&h=100&fit=crop&crop=face",
+          location: "Seattle, WA",
+          work: "Nature Photographer",
+          isAdmin: false
+        },
+        {
+          username: "mikechen",
+          email: "mike@example.com",
+          password: "password123", 
+          firstName: "Mike",
+          lastName: "Chen",
+          bio: "Team player and success driven",
+          profilePhoto: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
+          location: "San Francisco, CA",
+          work: "Product Manager",
+          isAdmin: false
+        }
+      ];
+
+      await db.insert(users).values(sampleUsers);
+    } catch (error) {
+      console.error("Error initializing sample data:", error);
+    }
   }
 
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const user: User = {
-      ...insertUser,
-      id: this.currentUserId++,
-      bio: insertUser.bio ?? null,
-      profilePhoto: insertUser.profilePhoto ?? null,
-      coverPhoto: insertUser.coverPhoto ?? null,
-      location: insertUser.location ?? null,
-      work: insertUser.work ?? null,
-      isAdmin: false,
-      createdAt: new Date(),
-    };
-    this.users.set(user.id, user);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        bio: insertUser.bio ?? null,
+        profilePhoto: insertUser.profilePhoto ?? null,
+        coverPhoto: insertUser.coverPhoto ?? null,
+        location: insertUser.location ?? null,
+        work: insertUser.work ?? null,
+        isAdmin: false,
+      })
+      .returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
   }
 
   async getUserWithFriendCount(id: number): Promise<UserWithFriendCount | undefined> {
     const user = await this.getUser(id);
     if (!user) return undefined;
 
-    const friendsCount = Array.from(this.friendships.values())
-      .filter(f => (f.userId === id || f.friendId === id) && f.status === 'accepted')
-      .length;
+    const friendsCountResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(friendships)
+      .where(
+        and(
+          or(eq(friendships.userId, id), eq(friendships.friendId, id)),
+          eq(friendships.status, 'accepted')
+        )
+      );
 
+    const friendsCount = friendsCountResult[0]?.count || 0;
     return { ...user, friendsCount };
   }
 
   // Posts
   async createPost(insertPost: InsertPost): Promise<Post> {
-    const post: Post = {
-      ...insertPost,
-      id: this.currentPostId++,
-      imageUrl: insertPost.imageUrl ?? null,
-      likesCount: 0,
-      commentsCount: 0,
-      sharesCount: 0,
-      createdAt: new Date(),
-    };
-    this.posts.set(post.id, post);
+    const [post] = await db
+      .insert(posts)
+      .values({
+        ...insertPost,
+        imageUrl: insertPost.imageUrl ?? null,
+        likesCount: 0,
+        commentsCount: 0,
+        sharesCount: 0,
+      })
+      .returning();
     return post;
   }
 
   async getPosts(): Promise<PostWithUser[]> {
-    const postsArray = Array.from(this.posts.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const postsWithUsers = await db
+      .select({
+        id: posts.id,
+        content: posts.content,
+        imageUrl: posts.imageUrl,
+        likesCount: posts.likesCount,
+        commentsCount: posts.commentsCount,
+        sharesCount: posts.sharesCount,
+        userId: posts.userId,
+        createdAt: posts.createdAt,
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username,
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .orderBy(desc(posts.createdAt));
 
-    const postsWithUser: PostWithUser[] = [];
-
-    for (const post of postsArray) {
-      const user = await this.getUser(post.userId);
-      if (user) {
-        postsWithUser.push({
-          ...post,
-          user: {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePhoto: user.profilePhoto,
-            username: user.username,
-          }
-        });
-      }
-    }
-
-    return postsWithUser;
-  }
-
-  async getUserPosts(userId: number): Promise<PostWithUser[]> {
-    const userPosts = Array.from(this.posts.values())
-      .filter(post => post.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    const user = await this.getUser(userId);
-    if (!user) return [];
-
-    return userPosts.map(post => ({
-      ...post,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profilePhoto: user.profilePhoto,
-        username: user.username,
-      }
+    return postsWithUsers.map(p => ({
+      ...p,
+      user: p.user!
     }));
   }
 
-  async getPost(id: number): Promise<PostWithUser | undefined> {
-    const post = this.posts.get(id);
-    if (!post) return undefined;
+  async getPostsByUser(userId: number): Promise<PostWithUser[]> {
+    const postsWithUsers = await db
+      .select({
+        id: posts.id,
+        content: posts.content,
+        imageUrl: posts.imageUrl,
+        likesCount: posts.likesCount,
+        commentsCount: posts.commentsCount,
+        sharesCount: posts.sharesCount,
+        userId: posts.userId,
+        createdAt: posts.createdAt,
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username,
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .where(eq(posts.userId, userId))
+      .orderBy(desc(posts.createdAt));
 
-    const user = await this.getUser(post.userId);
-    if (!user) return undefined;
-
-    return {
-      ...post,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profilePhoto: user.profilePhoto,
-        username: user.username,
-      }
-    };
+    return postsWithUsers.map(p => ({
+      ...p,
+      user: p.user!
+    }));
   }
 
-  async updatePostCounts(postId: number, field: 'likesCount' | 'commentsCount' | 'sharesCount', increment: number): Promise<void> {
-    const post = this.posts.get(postId);
-    if (post) {
-      post[field] += increment;
-      this.posts.set(postId, post);
-    }
+  async getPost(id: number): Promise<Post | undefined> {
+    const [post] = await db.select().from(posts).where(eq(posts.id, id));
+    return post || undefined;
+  }
+
+  async deletePost(id: number): Promise<boolean> {
+    const result = await db.delete(posts).where(eq(posts.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
   // Friendships
   async createFriendship(insertFriendship: InsertFriendship): Promise<Friendship> {
-    const friendship: Friendship = {
-      ...insertFriendship,
-      id: this.currentFriendshipId++,
-      createdAt: new Date(),
-    };
-    const key = `${friendship.userId}-${friendship.friendId}`;
-    this.friendships.set(key, friendship);
+    const [friendship] = await db
+      .insert(friendships)
+      .values(insertFriendship)
+      .returning();
     return friendship;
   }
 
   async getFriendship(userId: number, friendId: number): Promise<Friendship | undefined> {
-    const key1 = `${userId}-${friendId}`;
-    const key2 = `${friendId}-${userId}`;
-    return this.friendships.get(key1) || this.friendships.get(key2);
+    const [friendship] = await db
+      .select()
+      .from(friendships)
+      .where(
+        or(
+          and(eq(friendships.userId, userId), eq(friendships.friendId, friendId)),
+          and(eq(friendships.userId, friendId), eq(friendships.friendId, userId))
+        )
+      );
+    return friendship || undefined;
   }
 
-  async updateFriendshipStatus(userId: number, friendId: number, status: string): Promise<void> {
-    const key1 = `${userId}-${friendId}`;
-    const key2 = `${friendId}-${userId}`;
-    const friendship = this.friendships.get(key1) || this.friendships.get(key2);
-
-    if (friendship) {
-      friendship.status = status;
-      const key = friendship.userId === userId ? key1 : key2;
-      this.friendships.set(key, friendship);
-    }
+  async updateFriendshipStatus(userId: number, friendId: number, status: 'accepted' | 'declined'): Promise<void> {
+    await db
+      .update(friendships)
+      .set({ status })
+      .where(
+        and(
+          eq(friendships.userId, userId),
+          eq(friendships.friendId, friendId)
+        )
+      );
   }
 
   async getUserFriends(userId: number): Promise<User[]> {
-    const friendIds = Array.from(this.friendships.values())
-      .filter(f => f.status === 'accepted' && (f.userId === userId || f.friendId === userId))
-      .map(f => f.userId === userId ? f.friendId : f.userId);
+    const friendIds = await db
+      .select({
+        friendId: sql<number>`CASE 
+          WHEN ${friendships.userId} = ${userId} THEN ${friendships.friendId}
+          ELSE ${friendships.userId}
+        END`
+      })
+      .from(friendships)
+      .where(
+        and(
+          or(eq(friendships.userId, userId), eq(friendships.friendId, userId)),
+          eq(friendships.status, 'accepted')
+        )
+      );
 
-    const friends: User[] = [];
-    for (const friendId of friendIds) {
-      const friend = await this.getUser(friendId);
-      if (friend) friends.push(friend);
-    }
+    if (friendIds.length === 0) return [];
+
+    const friends = await db
+      .select()
+      .from(users)
+      .where(sql`${users.id} IN (${friendIds.map(f => f.friendId).join(',')})`);
 
     return friends;
   }
 
   async getFriendRequests(userId: number): Promise<User[]> {
-    const requesterIds = Array.from(this.friendships.values())
-      .filter(f => f.status === 'pending' && f.friendId === userId)
-      .map(f => f.userId);
+    const requestUserIds = await db
+      .select({ userId: friendships.userId })
+      .from(friendships)
+      .where(
+        and(
+          eq(friendships.friendId, userId),
+          eq(friendships.status, 'pending')
+        )
+      );
 
-    const requesters: User[] = [];
-    for (const requesterId of requesterIds) {
-      const requester = await this.getUser(requesterId);
-      if (requester) requesters.push(requester);
-    }
+    if (requestUserIds.length === 0) return [];
 
-    return requesters;
+    const requestUsers = await db
+      .select()
+      .from(users)
+      .where(sql`${users.id} IN (${requestUserIds.map(r => r.userId).join(',')})`);
+
+    return requestUsers;
   }
 
   async getFriendSuggestions(userId: number): Promise<User[]> {
-    const allUsers = Array.from(this.users.values());
-    const existingConnections = Array.from(this.friendships.values())
-      .filter(f => f.userId === userId || f.friendId === userId)
-      .map(f => f.userId === userId ? f.friendId : f.userId);
+    // Get users that are not already friends or have pending requests
+    const existingConnections = await db
+      .select({
+        connectedUserId: sql<number>`CASE 
+          WHEN ${friendships.userId} = ${userId} THEN ${friendships.friendId}
+          ELSE ${friendships.userId}
+        END`
+      })
+      .from(friendships)
+      .where(
+        or(eq(friendships.userId, userId), eq(friendships.friendId, userId))
+      );
 
-    return allUsers
-      .filter(user => user.id !== userId && !existingConnections.includes(user.id))
-      .slice(0, 5);
+    const excludeIds = [userId, ...existingConnections.map(c => c.connectedUserId)];
+
+    const suggestions = await db
+      .select()
+      .from(users)
+      .where(sql`${users.id} NOT IN (${excludeIds.join(',')})`)
+      .limit(5);
+
+    return suggestions;
   }
 
   // Likes
   async createLike(insertLike: InsertLike): Promise<Like> {
-    const like: Like = {
-      ...insertLike,
-      id: this.currentLikeId++,
-      createdAt: new Date(),
-    };
-    const key = `${like.userId}-${like.postId}`;
-    this.likes.set(key, like);
-    await this.updatePostCounts(like.postId, 'likesCount', 1);
+    const [like] = await db
+      .insert(likes)
+      .values(insertLike)
+      .returning();
+
+    // Update post likes count
+    await db
+      .update(posts)
+      .set({ likesCount: sql`${posts.likesCount} + 1` })
+      .where(eq(posts.id, insertLike.postId));
+
     return like;
   }
 
   async deleteLike(userId: number, postId: number): Promise<void> {
-    const key = `${userId}-${postId}`;
-    if (this.likes.delete(key)) {
-      await this.updatePostCounts(postId, 'likesCount', -1);
-    }
+    await db
+      .delete(likes)
+      .where(
+        and(
+          eq(likes.userId, userId),
+          eq(likes.postId, postId)
+        )
+      );
+
+    // Update post likes count
+    await db
+      .update(posts)
+      .set({ likesCount: sql`${posts.likesCount} - 1` })
+      .where(eq(posts.id, postId));
   }
 
   async isPostLiked(userId: number, postId: number): Promise<boolean> {
-    const key = `${userId}-${postId}`;
-    return this.likes.has(key);
+    const [like] = await db
+      .select()
+      .from(likes)
+      .where(
+        and(
+          eq(likes.userId, userId),
+          eq(likes.postId, postId)
+        )
+      );
+    return !!like;
   }
 
   // Comments
   async createComment(insertComment: InsertComment): Promise<Comment> {
-    const comment: Comment = {
-      ...insertComment,
-      id: this.currentCommentId++,
-      createdAt: new Date(),
-    };
-    this.comments.set(comment.id, comment);
-    await this.updatePostCounts(comment.postId, 'commentsCount', 1);
+    const [comment] = await db
+      .insert(comments)
+      .values(insertComment)
+      .returning();
+
+    // Update post comments count
+    await db
+      .update(posts)
+      .set({ commentsCount: sql`${posts.commentsCount} + 1` })
+      .where(eq(posts.id, insertComment.postId));
+
     return comment;
   }
 
   async getPostComments(postId: number): Promise<CommentWithUser[]> {
-    const postComments = Array.from(this.comments.values())
-      .filter(comment => comment.postId === postId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    const commentsWithUsers = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        userId: comments.userId,
+        postId: comments.postId,
+        createdAt: comments.createdAt,
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username,
+        }
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.userId, users.id))
+      .where(eq(comments.postId, postId))
+      .orderBy(comments.createdAt);
 
-    const commentsWithUser: CommentWithUser[] = [];
-
-    for (const comment of postComments) {
-      const user = await this.getUser(comment.userId);
-      if (user) {
-        commentsWithUser.push({
-          ...comment,
-          user: {
-            id: user.id,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            profilePhoto: user.profilePhoto,
-            username: user.username,
-          }
-        });
-      }
-    }
-
-    return commentsWithUser;
+    return commentsWithUsers.map(c => ({
+      ...c,
+      user: c.user!
+    }));
   }
 
-  // Chat
+  // Chat Messages
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const message: ChatMessage = {
-      ...insertMessage,
-      id: this.currentChatMessageId++,
-      createdAt: new Date(),
-    };
-    this.chatMessages.set(message.id, message);
+    const [message] = await db
+      .insert(chatMessages)
+      .values(insertMessage)
+      .returning();
     return message;
   }
 
   async getChatMessages(userId1: number, userId2: number): Promise<ChatMessage[]> {
-    return Array.from(this.chatMessages.values())
-      .filter(msg => 
-        (msg.senderId === userId1 && msg.receiverId === userId2) ||
-        (msg.senderId === userId2 && msg.receiverId === userId1)
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(
+        or(
+          and(
+            eq(chatMessages.senderId, userId1),
+            eq(chatMessages.receiverId, userId2)
+          ),
+          and(
+            eq(chatMessages.senderId, userId2),
+            eq(chatMessages.receiverId, userId1)
+          )
+        )
       )
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      .orderBy(chatMessages.createdAt);
+
+    return messages;
   }
 
   // Admin methods
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users).orderBy(users.createdAt);
   }
 
-  async getAllPosts(): Promise<Post[]> {
-    return Array.from(this.posts.values());
+  async deleteUser(id: number): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    return (result.rowCount || 0) > 0;
   }
 
-  async deleteUser(userId: number): Promise<boolean> {
-    const deleted = this.users.delete(userId);
-    // Also delete user's posts, likes, comments, etc.
-    this.posts.forEach((post, id) => {
-      if (post.userId === userId) {
-        this.posts.delete(id);
-      }
-    });
-    this.likes.forEach((like, id) => {
-      if (like.userId === userId) {
-        this.likes.delete(id);
-      }
-    });
-    this.comments.forEach((comment, id) => {
-      if (comment.userId === userId) {
-        this.comments.delete(id);
-      }
-    });
-    this.friendships.forEach((friendship, id) => {
-      if (friendship.userId === userId || friendship.friendId === userId) {
-        this.friendships.delete(id);
-      }
-    });
-    return deleted;
+  async getUserPosts(userId: number): Promise<PostWithUser[]> {
+    return await this.getPostsByUser(userId);
   }
 
-  async deletePost(postId: number): Promise<boolean> {
-    const deleted = this.posts.delete(postId);
-    // Also delete post's likes and comments
-    this.likes.forEach((like, id) => {
-      if (like.postId === postId) {
-        this.likes.delete(id);
-      }
-    });
-    this.comments.forEach((comment, id) => {
-      if (comment.postId === postId) {
-        this.comments.delete(id);
-      }
-    });
-    return deleted;
+  async getAllPosts(): Promise<PostWithUser[]> {
+    return await this.getPosts();
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
