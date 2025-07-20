@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   coverPhoto: text("cover_photo"),
   location: text("location"),
   work: text("work"),
+  isAdmin: boolean("is_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

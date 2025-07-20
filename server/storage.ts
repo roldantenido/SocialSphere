@@ -30,14 +30,14 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   getUserWithFriendCount(id: number): Promise<UserWithFriendCount | undefined>;
-  
+
   // Posts
   createPost(post: InsertPost): Promise<Post>;
   getPosts(): Promise<PostWithUser[]>;
   getUserPosts(userId: number): Promise<PostWithUser[]>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   updatePostCounts(postId: number, field: 'likesCount' | 'commentsCount' | 'sharesCount', increment: number): Promise<void>;
-  
+
   // Friendships
   createFriendship(friendship: InsertFriendship): Promise<Friendship>;
   getFriendship(userId: number, friendId: number): Promise<Friendship | undefined>;
@@ -45,16 +45,16 @@ export interface IStorage {
   getUserFriends(userId: number): Promise<User[]>;
   getFriendRequests(userId: number): Promise<User[]>;
   getFriendSuggestions(userId: number): Promise<User[]>;
-  
+
   // Likes
   createLike(like: InsertLike): Promise<Like>;
   deleteLike(userId: number, postId: number): Promise<void>;
   isPostLiked(userId: number, postId: number): Promise<boolean>;
-  
+
   // Comments
   createComment(comment: InsertComment): Promise<Comment>;
   getPostComments(postId: number): Promise<CommentWithUser[]>;
-  
+
   // Chat
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(userId1: number, userId2: number): Promise<ChatMessage[]>;
@@ -163,7 +163,7 @@ export class MemStorage implements IStorage {
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
     const user = this.users.get(id);
     if (!user) return undefined;
-    
+
     const updatedUser = { ...user, ...updates };
     this.users.set(id, updatedUser);
     return updatedUser;
@@ -199,7 +199,7 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     const postsWithUser: PostWithUser[] = [];
-    
+
     for (const post of postsArray) {
       const user = await this.getUser(post.userId);
       if (user) {
@@ -215,7 +215,7 @@ export class MemStorage implements IStorage {
         });
       }
     }
-    
+
     return postsWithUser;
   }
 
@@ -288,7 +288,7 @@ export class MemStorage implements IStorage {
     const key1 = `${userId}-${friendId}`;
     const key2 = `${friendId}-${userId}`;
     const friendship = this.friendships.get(key1) || this.friendships.get(key2);
-    
+
     if (friendship) {
       friendship.status = status;
       const key = friendship.userId === userId ? key1 : key2;
@@ -306,7 +306,7 @@ export class MemStorage implements IStorage {
       const friend = await this.getUser(friendId);
       if (friend) friends.push(friend);
     }
-    
+
     return friends;
   }
 
@@ -320,7 +320,7 @@ export class MemStorage implements IStorage {
       const requester = await this.getUser(requesterId);
       if (requester) requesters.push(requester);
     }
-    
+
     return requesters;
   }
 
@@ -378,7 +378,7 @@ export class MemStorage implements IStorage {
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     const commentsWithUser: CommentWithUser[] = [];
-    
+
     for (const comment of postComments) {
       const user = await this.getUser(comment.userId);
       if (user) {
@@ -394,7 +394,7 @@ export class MemStorage implements IStorage {
         });
       }
     }
-    
+
     return commentsWithUser;
   }
 
@@ -416,6 +416,57 @@ export class MemStorage implements IStorage {
         (msg.senderId === userId2 && msg.receiverId === userId1)
       )
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  // Admin methods
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
+  async getAllPosts(): Promise<Post[]> {
+    return Array.from(this.posts.values());
+  }
+
+  async deleteUser(userId: number): Promise<boolean> {
+    const deleted = this.users.delete(userId);
+    // Also delete user's posts, likes, comments, etc.
+    this.posts.forEach((post, id) => {
+      if (post.userId === userId) {
+        this.posts.delete(id);
+      }
+    });
+    this.likes.forEach((like, id) => {
+      if (like.userId === userId) {
+        this.likes.delete(id);
+      }
+    });
+    this.comments.forEach((comment, id) => {
+      if (comment.userId === userId) {
+        this.comments.delete(id);
+      }
+    });
+    this.friendships.forEach((friendship, id) => {
+      if (friendship.userId === userId || friendship.friendId === userId) {
+        this.friendships.delete(id);
+      }
+    });
+    return deleted;
+  }
+
+  async deletePost(postId: number): Promise<boolean> {
+    const deleted = this.posts.delete(postId);
+    // Also delete post's likes and comments
+    this.likes.forEach((like, id) => {
+      if (like.postId === postId) {
+        this.likes.delete(id);
+      }
+    });
+    this.comments.forEach((comment, id) => {
+      if (comment.postId === postId) {
+        this.comments.delete(id);
+      }
+    });
+    return deleted;
   }
 }
 

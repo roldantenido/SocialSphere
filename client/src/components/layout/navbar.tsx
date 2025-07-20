@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAuthHeaders, authStorage } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search } from "lucide-react";
+import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search, Shield } from "lucide-react";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { useState } from "react";
 
@@ -109,7 +109,7 @@ export function Navbar() {
               >
                 <Bell className="h-5 w-5 text-gray-600" />
               </Button>
-              
+
               {user && (
                 <Link href={`/profile/${user.id}`}>
                   <Avatar className="h-10 w-10 border-2 border-primary cursor-pointer">
@@ -118,7 +118,7 @@ export function Navbar() {
                   </Avatar>
                 </Link>
               )}
-              
+
               <Button
                 variant="ghost"
                 onClick={() => logoutMutation.mutate()}

@@ -14,6 +14,7 @@ import Groups from "@/pages/groups";
 import Marketplace from "@/pages/marketplace";
 import Gaming from "@/pages/gaming";
 import Profile from "@/pages/profile";
+import Admin from "@/pages/admin";
 
 function AuthenticatedApp() {
   const { data: user, isLoading } = useQuery({
@@ -52,6 +53,7 @@ function AuthenticatedApp() {
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/gaming" component={Gaming} />
       <Route path="/profile/:userId?" component={Profile} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

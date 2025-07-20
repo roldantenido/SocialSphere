@@ -38,6 +38,14 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+async function requireAdmin(req: any, res: any, next: any) {
+  const user = await storage.getUserWithFriendCount(req.userId);
+  if (!user || !user.isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
@@ -291,6 +299,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(400).json({ message: "Error sending message" });
     }
+  });
+
+  // Admin routes
+  app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
+    const users = await storage.getAllUsers();
+    const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+    res.json(usersWithoutPasswords);
+  });
+
+  app.get("/api/admin/posts", requireAuth, requireAdmin, async (req, res) => {
+    const posts = await storage.getAllPosts();
+    res.json(posts);
+  });
+
+  app.delete("/api/admin/users/:userId", requireAuth, requireAdmin, async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    
+    if (userId === req.userId) {
+      return res.status(400).json({ message: "Cannot delete your own account" });
+    }
+    
+    const deleted = await storage.deleteUser(userId);
+    if (deleted) {
+      res.json({ message: "User deleted successfully" });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  });
+
+  app.delete("/api/admin/posts/:postId", requireAuth, requireAdmin, async (req, res) => {
+    const postId = parseInt(req.params.postId);
+    const deleted = await storage.deletePost(postId);
+    
+    if (deleted) {
+      res.json({ message: "Post deleted successfully" });
+    } else {
+      res.status(404).json({ message: "Post not found" });
+    }
+  });
+
+  app.get("/api/admin/stats", requireAuth, requireAdmin, async (req, res) => {
+    const users = await storage.getAllUsers();
+    const posts = await storage.getAllPosts();
+    
+    res.json({
+      totalUsers: users.length,
+      totalPosts: posts.length,
+      adminUsers: users.filter(u => u.isAdmin).length,
+      regularUsers: users.filter(u => !u.isAdmin).length,
+    });
   });
 
   const httpServer = createServer(app);
