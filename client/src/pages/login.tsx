@@ -296,7 +296,7 @@ export default function Login() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-3 gap-8 mb-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <i className="fas fa-users text-2xl"></i>
