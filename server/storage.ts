@@ -22,7 +22,7 @@ import {
   type UserWithFriendCount
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql, inArray, notInArray } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -355,10 +355,11 @@ export class DatabaseStorage implements IStorage {
 
     if (requestUserIds.length === 0) return [];
 
+    // Use inArray instead of raw SQL
     const requestUsers = await db
       .select()
       .from(users)
-      .where(sql`${users.id} IN (${requestUserIds.map(r => r.userId).join(',')})`);
+      .where(inArray(users.id, requestUserIds.map(r => r.userId)));
 
     return requestUsers;
   }
@@ -379,10 +380,11 @@ export class DatabaseStorage implements IStorage {
 
     const excludeIds = [userId, ...existingConnections.map(c => c.connectedUserId)];
 
+    // Use notInArray instead of raw SQL
     const suggestions = await db
       .select()
       .from(users)
-      .where(sql`${users.id} NOT IN (${excludeIds.join(',')})`)
+      .where(notInArray(users.id, excludeIds))
       .limit(5);
 
     return suggestions;
