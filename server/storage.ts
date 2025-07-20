@@ -5,6 +5,11 @@ import {
   likes, 
   comments, 
   chatMessages,
+  groups,
+  groupMembers,
+  pages,
+  pageFollowers,
+  games,
   type User, 
   type InsertUser, 
   type Post, 
@@ -17,9 +22,22 @@ import {
   type InsertComment,
   type ChatMessage,
   type InsertChatMessage,
+  type Group,
+  type InsertGroup,
+  type GroupMember,
+  type InsertGroupMember,
+  type Page,
+  type InsertPage,
+  type PageFollower,
+  type InsertPageFollower,
+  type Game,
+  type InsertGame,
   type PostWithUser,
   type CommentWithUser,
-  type UserWithFriendCount
+  type UserWithFriendCount,
+  type GroupWithCreator,
+  type PageWithCreator,
+  type SearchResults
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, sql, inArray, notInArray } from "drizzle-orm";
@@ -65,6 +83,29 @@ export interface IStorage {
   // Chat Messages
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatMessages(userId1: number, userId2: number): Promise<ChatMessage[]>;
+
+  // Groups
+  createGroup(group: InsertGroup): Promise<Group>;
+  getGroup(id: number): Promise<Group | undefined>;
+  getUserGroups(userId: number): Promise<GroupWithCreator[]>;
+  getAllGroups(): Promise<GroupWithCreator[]>;
+  joinGroup(userId: number, groupId: number): Promise<GroupMember>;
+  leaveGroup(userId: number, groupId: number): Promise<void>;
+
+  // Pages
+  createPage(page: InsertPage): Promise<Page>;
+  getPage(id: number): Promise<Page | undefined>;
+  getAllPages(): Promise<PageWithCreator[]>;
+  followPage(userId: number, pageId: number): Promise<PageFollower>;
+  unfollowPage(userId: number, pageId: number): Promise<void>;
+
+  // Games
+  createGame(game: InsertGame): Promise<Game>;
+  getGame(id: number): Promise<Game | undefined>;
+  getAllGames(): Promise<Game[]>;
+
+  // Search
+  searchAll(query: string, limit?: number): Promise<SearchResults>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,7 +174,157 @@ export class DatabaseStorage implements IStorage {
         }
       ];
 
-      await db.insert(users).values(sampleUsers);
+      const insertedUsers = await db.insert(users).values(sampleUsers).returning();
+
+      // Create sample groups
+      const sampleGroups = [
+        {
+          name: "Photography Enthusiasts",
+          description: "Share your best shots and learn from fellow photographers",
+          coverPhoto: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&h=200&fit=crop",
+          createdBy: insertedUsers[1].id, // John Doe
+          membersCount: 1245,
+          isPrivate: false
+        },
+        {
+          name: "Tech Innovators",
+          description: "Discussing the latest in technology and innovation",
+          coverPhoto: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=200&fit=crop",
+          createdBy: insertedUsers[3].id, // Mike Chen
+          membersCount: 892,
+          isPrivate: false
+        },
+        {
+          name: "Nature Lovers",
+          description: "Connecting outdoor enthusiasts and nature photographers",
+          coverPhoto: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=200&fit=crop",
+          createdBy: insertedUsers[2].id, // Sarah Johnson
+          membersCount: 2156,
+          isPrivate: false
+        },
+        {
+          name: "Digital Creators Hub",
+          description: "A community for digital artists, designers, and content creators",
+          coverPhoto: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=200&fit=crop",
+          createdBy: insertedUsers[1].id, // John Doe
+          membersCount: 1567,
+          isPrivate: false
+        }
+      ];
+
+      await db.insert(groups).values(sampleGroups);
+
+      // Create sample pages
+      const samplePages = [
+        {
+          name: "TechNews Daily",
+          description: "Your daily dose of technology news and updates",
+          category: "business",
+          coverPhoto: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=200&fit=crop",
+          profilePhoto: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=100&h=100&fit=crop",
+          createdBy: insertedUsers[0].id, // Admin
+          followersCount: 15420,
+          isVerified: true
+        },
+        {
+          name: "Creative Studio Co.",
+          description: "Professional design and creative services",
+          category: "brand",
+          coverPhoto: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=200&fit=crop",
+          profilePhoto: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop",
+          createdBy: insertedUsers[1].id, // John Doe
+          followersCount: 8934,
+          isVerified: true
+        },
+        {
+          name: "Adventure Seekers",
+          description: "Explore the world's most amazing destinations",
+          category: "community",
+          coverPhoto: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=200&fit=crop",
+          profilePhoto: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=100&h=100&fit=crop",
+          createdBy: insertedUsers[2].id, // Sarah Johnson
+          followersCount: 23156,
+          isVerified: false
+        },
+        {
+          name: "Startup Valley",
+          description: "Latest news and insights from the startup ecosystem",
+          category: "business",
+          coverPhoto: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=400&h=200&fit=crop",
+          profilePhoto: "https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=100&h=100&fit=crop",
+          createdBy: insertedUsers[3].id, // Mike Chen
+          followersCount: 12867,
+          isVerified: true
+        }
+      ];
+
+      await db.insert(pages).values(samplePages);
+
+      // Create sample games
+      const sampleGames = [
+        {
+          name: "Word Quest Challenge",
+          description: "Test your vocabulary skills with this exciting word puzzle game",
+          category: "puzzle",
+          thumbnailUrl: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop",
+          playUrl: "/games/word-quest",
+          playersCount: 45678,
+          rating: 4
+        },
+        {
+          name: "Math Master Pro",
+          description: "Challenge your mathematical skills with increasingly difficult problems",
+          category: "puzzle",
+          thumbnailUrl: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&h=300&fit=crop",
+          playUrl: "/games/math-master",
+          playersCount: 23456,
+          rating: 5
+        },
+        {
+          name: "Memory Palace",
+          description: "Enhance your memory with this brain training game",
+          category: "casual",
+          thumbnailUrl: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop",
+          playUrl: "/games/memory-palace",
+          playersCount: 67890,
+          rating: 4
+        },
+        {
+          name: "Strategy Empire",
+          description: "Build your empire and conquer the world in this strategic game",
+          category: "strategy",
+          thumbnailUrl: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=300&fit=crop",
+          playUrl: "/games/strategy-empire",
+          playersCount: 34567,
+          rating: 5
+        },
+        {
+          name: "Action Heroes",
+          description: "Fast-paced action adventure game with multiple heroes",
+          category: "action",
+          thumbnailUrl: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=400&h=300&fit=crop",
+          playUrl: "/games/action-heroes",
+          playersCount: 89012,
+          rating: 4
+        }
+      ];
+
+      await db.insert(games).values(sampleGames);
+
+      // Create sample posts
+      const samplePosts = [
+        {
+          userId: insertedUsers[1].id,
+          content: "Just tried the new camera settings for street photography. The results are amazing! 📸",
+          imageUrl: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600&h=400&fit=crop",
+          likesCount: 42,
+          commentsCount: 8,
+          sharesCount: 3
+        }
+      ];
+
+      await db.insert(posts).values(samplePosts);
+
     } catch (error) {
       console.error("Error initializing sample data:", error);
     }
@@ -525,6 +716,352 @@ export class DatabaseStorage implements IStorage {
 
   async getAllPosts(): Promise<PostWithUser[]> {
     return await this.getPosts();
+  }
+
+  // Groups
+  async createGroup(insertGroup: InsertGroup): Promise<Group> {
+    const [group] = await db
+      .insert(groups)
+      .values(insertGroup)
+      .returning();
+    
+    // Add creator as admin member
+    await db
+      .insert(groupMembers)
+      .values({
+        groupId: group.id,
+        userId: group.createdBy,
+        role: 'admin'
+      });
+    
+    // Update members count
+    await db
+      .update(groups)
+      .set({ membersCount: 1 })
+      .where(eq(groups.id, group.id));
+    
+    return group;
+  }
+
+  async getGroup(id: number): Promise<Group | undefined> {
+    const [group] = await db
+      .select()
+      .from(groups)
+      .where(eq(groups.id, id))
+      .limit(1);
+    return group;
+  }
+
+  async getUserGroups(userId: number): Promise<GroupWithCreator[]> {
+    const userGroups = await db
+      .select({
+        id: groups.id,
+        name: groups.name,
+        description: groups.description,
+        coverPhoto: groups.coverPhoto,
+        createdBy: groups.createdBy,
+        membersCount: groups.membersCount,
+        isPrivate: groups.isPrivate,
+        createdAt: groups.createdAt,
+        creator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username
+        }
+      })
+      .from(groupMembers)
+      .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+      .innerJoin(users, eq(groups.createdBy, users.id))
+      .where(eq(groupMembers.userId, userId));
+
+    return userGroups;
+  }
+
+  async getAllGroups(): Promise<GroupWithCreator[]> {
+    const allGroups = await db
+      .select({
+        id: groups.id,
+        name: groups.name,
+        description: groups.description,
+        coverPhoto: groups.coverPhoto,
+        createdBy: groups.createdBy,
+        membersCount: groups.membersCount,
+        isPrivate: groups.isPrivate,
+        createdAt: groups.createdAt,
+        creator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username
+        }
+      })
+      .from(groups)
+      .innerJoin(users, eq(groups.createdBy, users.id))
+      .where(eq(groups.isPrivate, false))
+      .orderBy(desc(groups.membersCount));
+
+    return allGroups;
+  }
+
+  async joinGroup(userId: number, groupId: number): Promise<GroupMember> {
+    const [member] = await db
+      .insert(groupMembers)
+      .values({
+        userId,
+        groupId,
+        role: 'member'
+      })
+      .returning();
+    
+    // Update members count
+    await db
+      .update(groups)
+      .set({ membersCount: sql`${groups.membersCount} + 1` })
+      .where(eq(groups.id, groupId));
+    
+    return member;
+  }
+
+  async leaveGroup(userId: number, groupId: number): Promise<void> {
+    await db
+      .delete(groupMembers)
+      .where(
+        and(
+          eq(groupMembers.userId, userId),
+          eq(groupMembers.groupId, groupId)
+        )
+      );
+    
+    // Update members count
+    await db
+      .update(groups)
+      .set({ membersCount: sql`${groups.membersCount} - 1` })
+      .where(eq(groups.id, groupId));
+  }
+
+  // Pages
+  async createPage(insertPage: InsertPage): Promise<Page> {
+    const [page] = await db
+      .insert(pages)
+      .values(insertPage)
+      .returning();
+    return page;
+  }
+
+  async getPage(id: number): Promise<Page | undefined> {
+    const [page] = await db
+      .select()
+      .from(pages)
+      .where(eq(pages.id, id))
+      .limit(1);
+    return page;
+  }
+
+  async getAllPages(): Promise<PageWithCreator[]> {
+    const allPages = await db
+      .select({
+        id: pages.id,
+        name: pages.name,
+        description: pages.description,
+        category: pages.category,
+        coverPhoto: pages.coverPhoto,
+        profilePhoto: pages.profilePhoto,
+        createdBy: pages.createdBy,
+        followersCount: pages.followersCount,
+        isVerified: pages.isVerified,
+        createdAt: pages.createdAt,
+        creator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username
+        }
+      })
+      .from(pages)
+      .innerJoin(users, eq(pages.createdBy, users.id))
+      .orderBy(desc(pages.followersCount));
+
+    return allPages;
+  }
+
+  async followPage(userId: number, pageId: number): Promise<PageFollower> {
+    const [follower] = await db
+      .insert(pageFollowers)
+      .values({
+        userId,
+        pageId
+      })
+      .returning();
+    
+    // Update followers count
+    await db
+      .update(pages)
+      .set({ followersCount: sql`${pages.followersCount} + 1` })
+      .where(eq(pages.id, pageId));
+    
+    return follower;
+  }
+
+  async unfollowPage(userId: number, pageId: number): Promise<void> {
+    await db
+      .delete(pageFollowers)
+      .where(
+        and(
+          eq(pageFollowers.userId, userId),
+          eq(pageFollowers.pageId, pageId)
+        )
+      );
+    
+    // Update followers count
+    await db
+      .update(pages)
+      .set({ followersCount: sql`${pages.followersCount} - 1` })
+      .where(eq(pages.id, pageId));
+  }
+
+  // Games
+  async createGame(insertGame: InsertGame): Promise<Game> {
+    const [game] = await db
+      .insert(games)
+      .values(insertGame)
+      .returning();
+    return game;
+  }
+
+  async getGame(id: number): Promise<Game | undefined> {
+    const [game] = await db
+      .select()
+      .from(games)
+      .where(eq(games.id, id))
+      .limit(1);
+    return game;
+  }
+
+  async getAllGames(): Promise<Game[]> {
+    return await db
+      .select()
+      .from(games)
+      .orderBy(desc(games.playersCount), desc(games.rating));
+  }
+
+  // Search
+  async searchAll(query: string, limit = 10): Promise<SearchResults> {
+    const searchTerm = `%${query.toLowerCase()}%`;
+    
+    // Search users
+    const searchUsers = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        password: users.password,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        bio: users.bio,
+        profilePhoto: users.profilePhoto,
+        coverPhoto: users.coverPhoto,
+        location: users.location,
+        work: users.work,
+        isAdmin: users.isAdmin,
+        createdAt: users.createdAt,
+        friendsCount: sql<number>`0`
+      })
+      .from(users)
+      .where(
+        or(
+          sql`LOWER(${users.firstName}) LIKE ${searchTerm}`,
+          sql`LOWER(${users.lastName}) LIKE ${searchTerm}`,
+          sql`LOWER(${users.username}) LIKE ${searchTerm}`
+        )
+      )
+      .limit(limit);
+
+    // Search groups
+    const searchGroups = await db
+      .select({
+        id: groups.id,
+        name: groups.name,
+        description: groups.description,
+        coverPhoto: groups.coverPhoto,
+        createdBy: groups.createdBy,
+        membersCount: groups.membersCount,
+        isPrivate: groups.isPrivate,
+        createdAt: groups.createdAt,
+        creator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username
+        }
+      })
+      .from(groups)
+      .innerJoin(users, eq(groups.createdBy, users.id))
+      .where(
+        and(
+          eq(groups.isPrivate, false),
+          or(
+            sql`LOWER(${groups.name}) LIKE ${searchTerm}`,
+            sql`LOWER(${groups.description}) LIKE ${searchTerm}`
+          )
+        )
+      )
+      .limit(limit);
+
+    // Search pages
+    const searchPages = await db
+      .select({
+        id: pages.id,
+        name: pages.name,
+        description: pages.description,
+        category: pages.category,
+        coverPhoto: pages.coverPhoto,
+        profilePhoto: pages.profilePhoto,
+        createdBy: pages.createdBy,
+        followersCount: pages.followersCount,
+        isVerified: pages.isVerified,
+        createdAt: pages.createdAt,
+        creator: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profilePhoto: users.profilePhoto,
+          username: users.username
+        }
+      })
+      .from(pages)
+      .innerJoin(users, eq(pages.createdBy, users.id))
+      .where(
+        or(
+          sql`LOWER(${pages.name}) LIKE ${searchTerm}`,
+          sql`LOWER(${pages.description}) LIKE ${searchTerm}`
+        )
+      )
+      .limit(limit);
+
+    // Search games
+    const searchGames = await db
+      .select()
+      .from(games)
+      .where(
+        or(
+          sql`LOWER(${games.name}) LIKE ${searchTerm}`,
+          sql`LOWER(${games.description}) LIKE ${searchTerm}`,
+          sql`LOWER(${games.category}) LIKE ${searchTerm}`
+        )
+      )
+      .limit(limit);
+
+    return {
+      users: searchUsers,
+      groups: searchGroups,
+      pages: searchPages,
+      games: searchGames
+    };
   }
 }
 

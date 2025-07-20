@@ -60,6 +60,57 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const groups = pgTable("groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  coverPhoto: text("cover_photo"),
+  createdBy: integer("created_by").notNull(),
+  membersCount: integer("members_count").default(0).notNull(),
+  isPrivate: boolean("is_private").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const groupMembers = pgTable("group_members", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
+  role: text("role").default("member").notNull(), // 'admin', 'moderator', 'member'
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+export const pages = pgTable("pages", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // 'business', 'celebrity', 'brand', 'community'
+  coverPhoto: text("cover_photo"),
+  profilePhoto: text("profile_photo"),
+  createdBy: integer("created_by").notNull(),
+  followersCount: integer("followers_count").default(0).notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const pageFollowers = pgTable("page_followers", {
+  id: serial("id").primaryKey(),
+  pageId: integer("page_id").notNull(),
+  userId: integer("user_id").notNull(),
+  followedAt: timestamp("followed_at").defaultNow().notNull(),
+});
+
+export const games = pgTable("games", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // 'puzzle', 'action', 'strategy', 'casual'
+  thumbnailUrl: text("thumbnail_url"),
+  playUrl: text("play_url"),
+  playersCount: integer("players_count").default(0).notNull(),
+  rating: integer("rating").default(0).notNull(), // 1-5 stars
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -94,6 +145,34 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   createdAt: true,
 });
 
+export const insertGroupSchema = createInsertSchema(groups).omit({
+  id: true,
+  membersCount: true,
+  createdAt: true,
+});
+
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertPageSchema = createInsertSchema(pages).omit({
+  id: true,
+  followersCount: true,
+  createdAt: true,
+});
+
+export const insertPageFollowerSchema = createInsertSchema(pageFollowers).omit({
+  id: true,
+  followedAt: true,
+});
+
+export const insertGameSchema = createInsertSchema(games).omit({
+  id: true,
+  playersCount: true,
+  createdAt: true,
+});
+
 // Login schema
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -113,6 +192,16 @@ export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
+export type Page = typeof pages.$inferSelect;
+export type InsertPage = z.infer<typeof insertPageSchema>;
+export type PageFollower = typeof pageFollowers.$inferSelect;
+export type InsertPageFollower = z.infer<typeof insertPageFollowerSchema>;
+export type Game = typeof games.$inferSelect;
+export type InsertGame = z.infer<typeof insertGameSchema>;
 export type LoginCredentials = z.infer<typeof loginSchema>;
 
 // Extended types for API responses
@@ -127,4 +216,20 @@ export type CommentWithUser = Comment & {
 
 export type UserWithFriendCount = User & {
   friendsCount: number;
+};
+
+export type GroupWithCreator = Group & {
+  creator: Pick<User, "id" | "firstName" | "lastName" | "profilePhoto" | "username">;
+};
+
+export type PageWithCreator = Page & {
+  creator: Pick<User, "id" | "firstName" | "lastName" | "profilePhoto" | "username">;
+};
+
+// Search result types
+export type SearchResults = {
+  users: UserWithFriendCount[];
+  groups: GroupWithCreator[];
+  pages: PageWithCreator[];
+  games: Game[];
 };

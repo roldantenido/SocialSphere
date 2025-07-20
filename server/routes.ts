@@ -310,6 +310,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search routes
+  app.get("/api/search", requireAuth, async (req, res) => {
+    const { q: query } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ message: "Query parameter 'q' is required" });
+    }
+    
+    const results = await storage.searchAll(query);
+    res.json(results);
+  });
+
+  // Groups routes
+  app.get("/api/groups", requireAuth, async (req, res) => {
+    const groups = await storage.getAllGroups();
+    res.json(groups);
+  });
+
+  app.get("/api/groups/user", requireAuth, async (req, res) => {
+    const groups = await storage.getUserGroups(req.userId!);
+    res.json(groups);
+  });
+
+  app.post("/api/groups", requireAuth, async (req, res) => {
+    try {
+      const groupData = { ...req.body, createdBy: req.userId! };
+      const group = await storage.createGroup(groupData);
+      res.status(201).json(group);
+    } catch (error) {
+      res.status(400).json({ message: "Error creating group" });
+    }
+  });
+
+  app.post("/api/groups/:groupId/join", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      const member = await storage.joinGroup(req.userId!, groupId);
+      res.status(201).json(member);
+    } catch (error) {
+      res.status(400).json({ message: "Error joining group" });
+    }
+  });
+
+  app.delete("/api/groups/:groupId/leave", requireAuth, async (req, res) => {
+    try {
+      const groupId = parseInt(req.params.groupId);
+      await storage.leaveGroup(req.userId!, groupId);
+      res.json({ message: "Left group successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Error leaving group" });
+    }
+  });
+
+  // Pages routes
+  app.get("/api/pages", requireAuth, async (req, res) => {
+    const pages = await storage.getAllPages();
+    res.json(pages);
+  });
+
+  app.post("/api/pages", requireAuth, async (req, res) => {
+    try {
+      const pageData = { ...req.body, createdBy: req.userId! };
+      const page = await storage.createPage(pageData);
+      res.status(201).json(page);
+    } catch (error) {
+      res.status(400).json({ message: "Error creating page" });
+    }
+  });
+
+  app.post("/api/pages/:pageId/follow", requireAuth, async (req, res) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      const follower = await storage.followPage(req.userId!, pageId);
+      res.status(201).json(follower);
+    } catch (error) {
+      res.status(400).json({ message: "Error following page" });
+    }
+  });
+
+  app.delete("/api/pages/:pageId/unfollow", requireAuth, async (req, res) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      await storage.unfollowPage(req.userId!, pageId);
+      res.json({ message: "Unfollowed page successfully" });
+    } catch (error) {
+      res.status(400).json({ message: "Error unfollowing page" });
+    }
+  });
+
+  // Games routes
+  app.get("/api/games", requireAuth, async (req, res) => {
+    const games = await storage.getAllGames();
+    res.json(games);
+  });
+
+  app.post("/api/games", requireAuth, async (req, res) => {
+    try {
+      const game = await storage.createGame(req.body);
+      res.status(201).json(game);
+    } catch (error) {
+      res.status(400).json({ message: "Error creating game" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/users", requireAuth, requireAdmin, async (req, res) => {
     const users = await storage.getAllUsers();

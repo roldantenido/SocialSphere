@@ -15,6 +15,7 @@ import Marketplace from "@/pages/marketplace";
 import Gaming from "@/pages/gaming";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
+import Discover from "@/pages/discover";
 
 function AuthenticatedApp() {
   const { data: user, isLoading } = useQuery({
@@ -48,6 +49,7 @@ function AuthenticatedApp() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/discover" component={Discover} />
       <Route path="/friends" component={Friends} />
       <Route path="/groups" component={Groups} />
       <Route path="/marketplace" component={Marketplace} />

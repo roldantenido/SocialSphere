@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAuthHeaders, authStorage } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search, Shield } from "lucide-react";
+import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search, Shield, Compass } from "lucide-react";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { useState } from "react";
 
@@ -41,6 +41,7 @@ export function Navbar() {
 
   const navItems = [
     { path: "/", icon: Home, label: "Home" },
+    { path: "/discover", icon: Compass, label: "Discover" },
     { path: "/friends", icon: Users, label: "Friends" },
     { path: "/groups", icon: Users2, label: "Groups" },
     { path: "/marketplace", icon: Store, label: "Marketplace" },
