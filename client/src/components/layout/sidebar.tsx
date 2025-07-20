@@ -38,10 +38,10 @@ export function Sidebar() {
               <AvatarFallback>{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                 {user.firstName} {user.lastName}
               </h3>
-              <p className="text-sm text-gray-500">{user.friendsCount} friends</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{user.friendsCount} friends</p>
             </div>
           </div>
           <Link href={`/profile/${user.id}`}>
@@ -55,9 +55,9 @@ export function Sidebar() {
           const Icon = link.icon;
           return (
             <Link key={link.label} href={link.href}>
-              <div className="flex items-center space-x-3 p-3 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors">
+              <div className="flex items-center space-x-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
                 <Icon className="h-5 w-5 text-primary" />
-                <span className="text-gray-700">{link.label}</span>
+                <span className="text-gray-700 dark:text-gray-300">{link.label}</span>
               </div>
             </Link>
           );

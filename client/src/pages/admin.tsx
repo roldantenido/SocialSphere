@@ -92,7 +92,7 @@ export default function Admin() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
       <div className="container mx-auto p-6">
         <div className="flex items-center gap-2 mb-6">

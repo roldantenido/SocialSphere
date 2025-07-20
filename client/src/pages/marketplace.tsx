@@ -41,7 +41,7 @@ export default function Marketplace() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Navbar />
       
       <div className="pt-16 min-h-screen">

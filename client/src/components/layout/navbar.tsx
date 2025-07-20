@@ -5,14 +5,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getAuthHeaders, authStorage } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search, Shield, Compass } from "lucide-react";
+import { Home, Users, Users2, Store, Gamepad2, MessageCircle, Bell, Search, Shield, Compass, Moon, Sun } from "lucide-react";
 import { ChatWindow } from "@/components/chat/chat-window";
 import { useState } from "react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useTheme } from "@/components/theme-provider";
 
 export function Navbar() {
   const [location] = useLocation();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -53,7 +54,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="bg-white shadow-sm border-b border-gray-200 fixed w-full top-0 z-50">
+      <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 fixed w-full top-0 z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             {/* Left side */}
@@ -66,7 +67,7 @@ export function Navbar() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input 
                     placeholder="Search SocialConnect" 
-                    className="w-64 pl-10 bg-gray-100 border-none focus:ring-2 focus:ring-primary rounded-full"
+                    className="w-64 pl-10 bg-gray-100 dark:bg-gray-800 border-none focus:ring-2 focus:ring-primary rounded-full text-gray-900 dark:text-gray-100"
                   />
                 </div>
               </div>
@@ -84,7 +85,7 @@ export function Navbar() {
                       className={`px-4 py-2 rounded-lg ${
                         isActive(item.path) 
                           ? "bg-primary text-white hover:bg-primary/90" 
-                          : "hover:bg-gray-100"
+                          : "hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`}
                     >
                       <Icon className="h-5 w-5" />
@@ -96,21 +97,32 @@ export function Navbar() {
 
             {/* Right side */}
             <div className="flex items-center space-x-4">
-              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-2 rounded-full hover:bg-gray-100"
-                onClick={() => setIsChatOpen(!isChatOpen)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={toggleTheme}
               >
-                <MessageCircle className="h-5 w-5 text-gray-600" />
+                {theme === "light" ? (
+                  <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <Sun className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                )}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-2 rounded-full hover:bg-gray-100"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setIsChatOpen(!isChatOpen)}
               >
-                <Bell className="h-5 w-5 text-gray-600" />
+                <MessageCircle className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
               </Button>
 
               {user && (

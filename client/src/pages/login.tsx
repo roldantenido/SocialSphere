@@ -107,9 +107,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gray-100 dark:bg-gray-900">
       {/* Left Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-white">
+      <div className="flex-1 flex items-center justify-center p-8 bg-white dark:bg-gray-800">
         <div className="w-full max-w-md">
           <Card className="border-0 shadow-none">
             <CardHeader className="text-center pb-8">
@@ -236,7 +236,7 @@ export default function Login() {
                   <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-muted-foreground">Or continue with</span>
+                  <span className="px-2 bg-white dark:bg-gray-800 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
 

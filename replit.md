@@ -1,8 +1,17 @@
 # Replit.md
 
+## Recent Changes
+- **January 20, 2025**: Implemented comprehensive dark mode support throughout the entire application
+  - Added ThemeProvider component with theme context and localStorage persistence
+  - Created theme toggle functionality in navbar with sun/moon icon switching
+  - Updated all pages (home, discover, friends, login, groups, gaming, marketplace, profile, admin) with dark mode backgrounds
+  - Applied dark mode styling to navbar, sidebar, and all UI components
+  - Enhanced login page with gradient backgrounds that adapt to dark mode
+  - Updated CSS variables for proper dark/light theme support
+
 ## Overview
 
-This is a full-stack social media application built with React, Express, and PostgreSQL. The app follows a typical social media structure with user authentication, posts, comments, likes, friendships, and real-time chat functionality. It uses a modern tech stack with TypeScript throughout, shadcn/ui components for the frontend, and Drizzle ORM for database management.
+This is a full-stack social media application built with React, Express, and PostgreSQL. The app follows a typical social media structure with user authentication, posts, comments, likes, friendships, and real-time chat functionality. It uses a modern tech stack with TypeScript throughout, shadcn/ui components for the frontend, and Drizzle ORM for database management. The application features complete dark mode support with system preference detection and smooth theme transitions.
 
 ## User Preferences
 
@@ -68,7 +77,9 @@ The application uses a PostgreSQL database with the following main entities:
 
 ### UI Component System
 - **Base**: shadcn/ui components built on Radix UI primitives
-- **Theming**: CSS variables with light/dark mode support
+- **Theming**: Complete dark/light mode implementation with CSS variables and automatic system preference detection
+- **Theme Toggle**: Integrated theme switcher in navbar with sun/moon icons and smooth transitions
+- **Dark Mode Coverage**: Full application dark mode support across all pages and components
 - **Responsiveness**: Mobile-first design with Tailwind breakpoints
 - **Accessibility**: ARIA-compliant components from Radix UI
 
