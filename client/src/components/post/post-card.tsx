@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { getAuthHeaders } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ThumbsUp, MessageCircle, Share, MoreHorizontal, Accessibility } from "lucide-react";
+import { ThumbsUp, MessageCircle, Share, MoreHorizontal, Accessibility, Image as ImageIcon, Video } from "lucide-react";
 import type { PostWithUser, CommentWithUser } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
@@ -126,27 +126,76 @@ export function PostCard({ post }: PostCardProps) {
 
         {/* Post Media */}
         {post.imageUrl && post.mediaType === "image" && (
-          <img 
-            src={post.imageUrl} 
-            alt="Post content" 
-            className="w-full max-h-96 object-cover"
-          />
+          <div className="relative">
+            <img 
+              src={post.imageUrl} 
+              alt="Post content" 
+              className="w-full max-h-96 object-cover"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+                // Show error message
+                const errorDiv = img.nextElementSibling as HTMLElement;
+                if (errorDiv) errorDiv.style.display = 'block';
+              }}
+            />
+            <div 
+              className="hidden w-full h-32 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400"
+            >
+              <div className="text-center">
+                <ImageIcon className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Unable to load image</p>
+              </div>
+            </div>
+          </div>
         )}
         {post.videoUrl && post.mediaType === "video" && (
-          <video
-            src={post.videoUrl}
-            controls
-            className="w-full max-h-96"
-            preload="metadata"
-          />
+          <div className="relative">
+            <video
+              src={post.videoUrl}
+              controls
+              className="w-full max-h-96"
+              preload="metadata"
+              onError={(e) => {
+                const video = e.target as HTMLVideoElement;
+                video.style.display = 'none';
+                const errorDiv = video.nextElementSibling as HTMLElement;
+                if (errorDiv) errorDiv.style.display = 'block';
+              }}
+            />
+            <div 
+              className="hidden w-full h-32 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400"
+            >
+              <div className="text-center">
+                <Video className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Unable to load video</p>
+              </div>
+            </div>
+          </div>
         )}
         {/* Legacy support for imageUrl without mediaType */}
         {post.imageUrl && !post.mediaType && (
-          <img 
-            src={post.imageUrl} 
-            alt="Post content" 
-            className="w-full max-h-96 object-cover"
-          />
+          <div className="relative">
+            <img 
+              src={post.imageUrl} 
+              alt="Post content" 
+              className="w-full max-h-96 object-cover"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+                const errorDiv = img.nextElementSibling as HTMLElement;
+                if (errorDiv) errorDiv.style.display = 'block';
+              }}
+            />
+            <div 
+              className="hidden w-full h-32 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400"
+            >
+              <div className="text-center">
+                <ImageIcon className="h-8 w-8 mx-auto mb-2" />
+                <p className="text-sm">Unable to load image</p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Post Stats */}

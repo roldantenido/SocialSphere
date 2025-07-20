@@ -151,17 +151,21 @@ export function CreatePost() {
     mutationFn: async (data: CreatePostData) => {
       let finalData = { ...data };
       
-      // If we have a file, we'll use a simulated file upload
+      // If we have a file, convert it to base64 for storage
       // In a real app, you'd upload to a service like AWS S3, Cloudinary, etc.
       if (mediaFile) {
-        // Simulate file upload by using the blob URL
-        // In production, replace this with actual file upload logic
-        const uploadedUrl = mediaUrl; // This would be the URL returned from your file upload service
-        
-        if (mediaType === "image") {
-          finalData.imageUrl = uploadedUrl;
-        } else {
-          finalData.videoUrl = uploadedUrl;
+        try {
+          const base64 = await convertFileToBase64(mediaFile);
+          
+          if (mediaType === "image") {
+            finalData.imageUrl = base64;
+            finalData.videoUrl = "";
+          } else {
+            finalData.videoUrl = base64;
+            finalData.imageUrl = "";
+          }
+        } catch (error) {
+          throw new Error("Failed to process media file");
         }
       }
 
@@ -186,14 +190,24 @@ export function CreatePost() {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({ title: "Success", description: "Post created successfully!" });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create post",
+        description: error.message || "Failed to create post",
         variant: "destructive",
       });
     },
   });
+
+  // Helper function to convert file to base64
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
   const onSubmit = (data: CreatePostData) => {
     createPostMutation.mutate(data);

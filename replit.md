@@ -1,7 +1,16 @@
 # Replit.md
 
 ## Recent Changes
-- **January 20, 2025**: Implemented comprehensive dark mode support and profile interaction features
+- **January 20, 2025**: Enhanced media posting with file browsing and improved photo/video functionality
+  - Replaced URL input with native file browsing for photo and video uploads
+  - Added separate Photo, Video, and Reels upload buttons with file selection dialogs
+  - Implemented file size validation (10MB images, 100MB videos, 50MB reels) 
+  - Added video duration check for Reels (max 60 seconds)
+  - Enhanced media preview with file name, size display, and remove functionality
+  - Fixed photo display issues by implementing base64 conversion for file storage
+  - Added error handling and fallback displays for media that fails to load
+  - Maintained complete dark mode support for all new UI elements
+- **January 20, 2025**: Previously implemented comprehensive dark mode support and profile interaction features
   - Added complete dark mode support throughout the entire application with ThemeProvider component
   - Created theme toggle functionality in navbar with sun/moon icon switching
   - Updated all pages and components with proper dark mode styling and backgrounds
