@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -106,157 +107,220 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">SocialConnect</CardTitle>
-          <CardDescription>
-            {isSignUp ? "Create your account" : "Connect with friends and the world around you"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {!isSignUp ? (
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="Email or Phone" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input type="password" placeholder="Password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={loginMutation.isPending}
-                >
-                  {loginMutation.isPending ? "Logging in..." : "Log In"}
-                </Button>
-              </form>
-            </Form>
-          ) : (
-            <Form {...signUpForm}>
-              <form onSubmit={signUpForm.handleSubmit(onSignUpSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={signUpForm.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="First Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={signUpForm.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="Last Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+    <div className="min-h-screen flex">
+      {/* Left Side - Login Form */}
+      <div className="flex-1 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md">
+          <Card className="border-0 shadow-none">
+            <CardHeader className="text-center pb-8">
+              <CardTitle className="text-4xl font-bold text-primary mb-2">SocialConnect</CardTitle>
+              <CardDescription className="text-lg">
+                {isSignUp ? "Create your account and join the community" : "Welcome back! Sign in to your account"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {!isSignUp ? (
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                    <FormField
+                      control={loginForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input placeholder="Email or Phone" {...field} className="h-12" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input type="password" placeholder="Password" {...field} className="h-12" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 text-lg" 
+                      disabled={loginMutation.isPending}
+                    >
+                      {loginMutation.isPending ? "Logging in..." : "Log In"}
+                    </Button>
+                  </form>
+                </Form>
+              ) : (
+                <Form {...signUpForm}>
+                  <form onSubmit={signUpForm.handleSubmit(onSignUpSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={signUpForm.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="First Name" {...field} className="h-12" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={signUpForm.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input placeholder="Last Name" {...field} className="h-12" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={signUpForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input placeholder="Username" {...field} className="h-12" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={signUpForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input placeholder="Email" {...field} className="h-12" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={signUpForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input type="password" placeholder="Password" {...field} className="h-12" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 text-lg" 
+                      disabled={signUpMutation.isPending}
+                    >
+                      {signUpMutation.isPending ? "Creating Account..." : "Sign Up"}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full" />
                 </div>
-                <FormField
-                  control={signUpForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="Username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={signUpForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input placeholder="Email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={signUpForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input type="password" placeholder="Password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={signUpMutation.isPending}
-                >
-                  {signUpMutation.isPending ? "Creating Account..." : "Sign Up"}
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="w-full h-12" type="button">
+                  <i className="fab fa-facebook-f text-blue-600 mr-2"></i>
+                  Facebook
                 </Button>
-              </form>
-            </Form>
-          )}
+                <Button variant="outline" className="w-full h-12" type="button">
+                  <i className="fab fa-google text-red-500 mr-2"></i>
+                  Google
+                </Button>
+              </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
+              <div className="text-center">
+                <button 
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-primary hover:text-primary/80 font-medium text-lg"
+                >
+                  {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Right Side - Background Image with Content */}
+      <div className="flex-1 bg-gradient-to-br from-primary via-blue-600 to-purple-700 flex items-center justify-center p-12 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full"></div>
+          <div className="absolute top-40 right-32 w-24 h-24 bg-white rounded-full"></div>
+          <div className="absolute bottom-32 left-40 w-28 h-28 bg-white rounded-full"></div>
+          <div className="absolute bottom-20 right-20 w-36 h-36 bg-white rounded-full"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 text-center text-white max-w-lg">
+          <div className="mb-8">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+              <i className="fas fa-share-alt text-primary text-3xl"></i>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-background text-muted-foreground">Or continue with</span>
+            <h2 className="text-5xl font-bold mb-6 leading-tight">
+              Connect, Share & 
+              <span className="text-yellow-300"> Automate</span>
+            </h2>
+            <p className="text-xl leading-relaxed mb-8 opacity-90">
+              Streamline your social presence by connecting with friends, sharing memorable moments, 
+              and automatically syncing your content across all your social media platforms. 
+              Experience seamless social networking like never before.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i className="fas fa-users text-2xl"></i>
+              </div>
+              <p className="text-sm font-medium">Connect with Friends</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i className="fas fa-camera text-2xl"></i>
+              </div>
+              <p className="text-sm font-medium">Share Moments</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i className="fas fa-sync-alt text-2xl"></i>
+              </div>
+              <p className="text-sm font-medium">Auto-Sync Content</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="w-full" type="button">
-              <i className="fab fa-facebook-f text-blue-600 mr-2"></i>
-              Facebook
-            </Button>
-            <Button variant="outline" className="w-full" type="button">
-              <i className="fab fa-google text-red-500 mr-2"></i>
-              Google
-            </Button>
+          <div className="flex items-center justify-center space-x-4 text-sm opacity-75">
+            <i className="fab fa-facebook text-2xl"></i>
+            <i className="fab fa-twitter text-2xl"></i>
+            <i className="fab fa-instagram text-2xl"></i>
+            <i className="fab fa-linkedin text-2xl"></i>
+            <i className="fab fa-youtube text-2xl"></i>
           </div>
-
-          <div className="text-center">
-            <button 
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary hover:text-primary/80 font-medium"
-            >
-              {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
