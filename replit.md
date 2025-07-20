@@ -106,7 +106,8 @@ The application uses a PostgreSQL database with the following main entities:
 
 ### Real-time Features
 - **Chat**: Polling-based message updates (3-second intervals) with fixed-position chat window
-- **Profile Interaction**: View any user profile and initiate chat (friends only) or send friend requests
+- **Profile Interaction**: View any user profile and initiate chat (any user) or send friend requests
+- **Universal Messaging**: Users can now message anyone, not restricted to friends only
 - **Feed Updates**: Manual refresh via TanStack Query
 - **Friendship Status**: Real-time updates on accept/decline with proper status tracking
 - **User Discovery**: Enhanced search and discovery with connect/view profile actions

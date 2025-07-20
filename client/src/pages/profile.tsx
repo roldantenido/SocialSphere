@@ -433,7 +433,6 @@ export default function Profile() {
                       <Button 
                         variant="outline" 
                         onClick={handleStartChat}
-                        disabled={!isFriend}
                       >
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Message

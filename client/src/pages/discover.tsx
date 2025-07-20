@@ -14,10 +14,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Users, FileText, Gamepad2, Verified, Star, Crown, UserPlus, Plus, MessageCircle } from "lucide-react";
 import type { SearchResults, UserWithFriendCount, GroupWithCreator, PageWithCreator, Game } from "@shared/schema";
+import { ChatWindow } from "@/components/chat/chat-window";
 
 export default function Discover() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatRecipientId, setChatRecipientId] = useState<number | null>(null);
   const { toast } = useToast();
 
   // Search results query
@@ -161,11 +164,16 @@ export default function Discover() {
             <UserPlus className="h-4 w-4 mr-1" />
             {sendFriendRequestMutation.isPending ? "Sending..." : "Connect"}
           </Button>
-          <Link href={`/profile/${user.id}`}>
-            <Button size="sm" variant="outline">
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => {
+              setChatRecipientId(user.id);
+              setIsChatOpen(true);
+            }}
+          >
+            <MessageCircle className="h-4 w-4" />
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -450,6 +458,17 @@ export default function Discover() {
           </Card>
         </div>
       </div>
+      
+      {/* Chat Window */}
+      {isChatOpen && chatRecipientId && (
+        <ChatWindow
+          recipientId={chatRecipientId}
+          onClose={() => {
+            setIsChatOpen(false);
+            setChatRecipientId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

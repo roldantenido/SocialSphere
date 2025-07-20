@@ -1,12 +1,21 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/navbar";
 import { FriendCard } from "@/components/friends/friend-card";
+import { ChatWindow } from "@/components/chat/chat-window";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAuthHeaders } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { User } from "@shared/schema";
 
 export default function Friends() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatRecipientId, setChatRecipientId] = useState<number | null>(null);
+
+  const handleStartChat = (userId: number) => {
+    setChatRecipientId(userId);
+    setIsChatOpen(true);
+  };
   const { data: friends = [], isLoading: friendsLoading } = useQuery({
     queryKey: ["/api/friends"],
     queryFn: async () => {
@@ -81,6 +90,7 @@ export default function Friends() {
                           key={user.id} 
                           user={user} 
                           type="request"
+                          onStartChat={handleStartChat}
                         />
                       ))}
                     </div>
@@ -103,6 +113,7 @@ export default function Friends() {
                           key={user.id} 
                           user={user} 
                           type="suggestion"
+                          onStartChat={handleStartChat}
                         />
                       ))}
                     </div>
@@ -128,6 +139,7 @@ export default function Friends() {
                         key={user.id} 
                         user={user} 
                         type="friend"
+                        onStartChat={handleStartChat}
                       />
                     ))}
                   </div>
@@ -137,6 +149,17 @@ export default function Friends() {
           </Card>
         </div>
       </div>
+      
+      {/* Chat Window */}
+      {isChatOpen && chatRecipientId && (
+        <ChatWindow
+          recipientId={chatRecipientId}
+          onClose={() => {
+            setIsChatOpen(false);
+            setChatRecipientId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

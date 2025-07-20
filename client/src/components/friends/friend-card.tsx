@@ -13,9 +13,10 @@ interface FriendCardProps {
   user: User;
   type: "friend" | "request" | "suggestion";
   onAction?: () => void;
+  onStartChat?: (userId: number) => void;
 }
 
-export function FriendCard({ user, type, onAction }: FriendCardProps) {
+export function FriendCard({ user, type, onAction, onStartChat }: FriendCardProps) {
   const { toast } = useToast();
 
   const sendRequestMutation = useMutation({
@@ -128,7 +129,11 @@ export function FriendCard({ user, type, onAction }: FriendCardProps) {
                 View Profile
               </Button>
             </Link>
-            <Button variant="outline" size="icon">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => onStartChat?.(user.id)}
+            >
               <MessageCircle className="h-4 w-4" />
             </Button>
           </div>
