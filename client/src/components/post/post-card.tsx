@@ -124,12 +124,28 @@ export function PostCard({ post }: PostCardProps) {
           <p className="text-gray-800">{post.content}</p>
         </div>
 
-        {/* Post Image */}
-        {post.imageUrl && (
+        {/* Post Media */}
+        {post.imageUrl && post.mediaType === "image" && (
           <img 
             src={post.imageUrl} 
             alt="Post content" 
-            className="w-full h-96 object-cover"
+            className="w-full max-h-96 object-cover"
+          />
+        )}
+        {post.videoUrl && post.mediaType === "video" && (
+          <video
+            src={post.videoUrl}
+            controls
+            className="w-full max-h-96"
+            preload="metadata"
+          />
+        )}
+        {/* Legacy support for imageUrl without mediaType */}
+        {post.imageUrl && !post.mediaType && (
+          <img 
+            src={post.imageUrl} 
+            alt="Post content" 
+            className="w-full max-h-96 object-cover"
           />
         )}
 

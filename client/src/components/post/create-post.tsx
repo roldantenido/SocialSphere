@@ -11,16 +11,20 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { getAuthHeaders } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Video, Image as ImageIcon, Smile } from "lucide-react";
+import { Video, Image as ImageIcon, Smile, X } from "lucide-react";
 
 const createPostSchema = z.object({
   content: z.string().min(1, "Post cannot be empty"),
   imageUrl: z.string().optional(),
+  videoUrl: z.string().optional(),
+  mediaType: z.enum(["image", "video"]).optional(),
 });
 
 type CreatePostData = z.infer<typeof createPostSchema>;
 
 export function CreatePost() {
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  const [mediaUrl, setMediaUrl] = useState("");
   const { toast } = useToast();
 
   const { data: user } = useQuery({
@@ -39,8 +43,34 @@ export function CreatePost() {
     defaultValues: {
       content: "",
       imageUrl: "",
+      videoUrl: "",
+      mediaType: undefined,
     },
   });
+
+  const handleMediaUpload = (type: "image" | "video") => {
+    setMediaType(type);
+    const url = prompt(`Enter ${type} URL:`);
+    if (url) {
+      setMediaUrl(url);
+      if (type === "image") {
+        form.setValue("imageUrl", url);
+        form.setValue("videoUrl", "");
+      } else {
+        form.setValue("videoUrl", url);
+        form.setValue("imageUrl", "");
+      }
+      form.setValue("mediaType", type);
+    }
+  };
+
+  const removeMedia = () => {
+    setMediaType(null);
+    setMediaUrl("");
+    form.setValue("imageUrl", "");
+    form.setValue("videoUrl", "");
+    form.setValue("mediaType", undefined);
+  };
 
   const createPostMutation = useMutation({
     mutationFn: async (data: CreatePostData) => {
@@ -61,6 +91,8 @@ export function CreatePost() {
     },
     onSuccess: () => {
       form.reset();
+      setMediaType(null);
+      setMediaUrl("");
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({ title: "Success", description: "Post created successfully!" });
     },
@@ -105,32 +137,70 @@ export function CreatePost() {
                 )}
               />
             </div>
-            
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem className="mb-4">
-                  <FormControl>
-                    <Input
-                      placeholder="Add an image URL (optional)"
-                      className="w-full"
-                      {...field}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+
+            {/* Media Preview */}
+            {mediaUrl && (
+              <div className="mb-4 relative">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeMedia}
+                  className="absolute top-2 right-2 z-10 bg-black bg-opacity-50 text-white rounded-full p-1 hover:bg-opacity-70"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                {mediaType === "image" ? (
+                  <img
+                    src={mediaUrl}
+                    alt="Preview"
+                    className="w-full max-h-64 object-cover rounded-lg border"
+                    onError={() => {
+                      toast({
+                        title: "Error",
+                        description: "Failed to load image",
+                        variant: "destructive",
+                      });
+                      removeMedia();
+                    }}
+                  />
+                ) : (
+                  <video
+                    src={mediaUrl}
+                    controls
+                    className="w-full max-h-64 rounded-lg border"
+                    onError={() => {
+                      toast({
+                        title: "Error",
+                        description: "Failed to load video",
+                        variant: "destructive",
+                      });
+                      removeMedia();
+                    }}
+                  />
+                )}
+              </div>
+            )}
 
             <div className="flex justify-between items-center">
               <div className="flex space-x-4">
-                <Button type="button" variant="ghost" className="flex items-center space-x-2 px-4 py-2">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="flex items-center space-x-2 px-4 py-2"
+                  onClick={() => handleMediaUpload("video")}
+                >
                   <Video className="h-5 w-5 text-red-500" />
-                  <span className="text-gray-600">Live Video</span>
+                  <span className="text-gray-600">Video</span>
                 </Button>
-                <Button type="button" variant="ghost" className="flex items-center space-x-2 px-4 py-2">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="flex items-center space-x-2 px-4 py-2"
+                  onClick={() => handleMediaUpload("image")}
+                >
                   <ImageIcon className="h-5 w-5 text-green-500" />
-                  <span className="text-gray-600">Photo/Video</span>
+                  <span className="text-gray-600">Photo</span>
                 </Button>
                 <Button type="button" variant="ghost" className="flex items-center space-x-2 px-4 py-2">
                   <Smile className="h-5 w-5 text-yellow-500" />

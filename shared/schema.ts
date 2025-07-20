@@ -23,6 +23,8 @@ export const posts = pgTable("posts", {
   userId: integer("user_id").notNull(),
   content: text("content").notNull(),
   imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
+  mediaType: text("media_type"), // 'image', 'video', or null for text-only
   likesCount: integer("likes_count").default(0).notNull(),
   commentsCount: integer("comments_count").default(0).notNull(),
   sharesCount: integer("shares_count").default(0).notNull(),
