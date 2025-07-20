@@ -560,6 +560,68 @@ ${sslConfig}
                     View Source
                   </Button>
                 </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950">
+                  <div>
+                    <h4 className="font-medium">Cloud Docker Setup</h4>
+                    <p className="text-sm text-muted-foreground">GitHub Actions files for automatic Docker builds</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const githubWorkflow = `# This file should be placed in .github/workflows/docker-build.yml
+# It will automatically build and push Docker images when you push to GitHub
+
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: \${{ github.actor }}
+        password: \${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ghcr.io/\${{ github.repository }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max`;
+
+                      const blob = new Blob([githubWorkflow], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'docker-build.yml';
+                      a.click();
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    GitHub Actions
+                  </Button>
+                </div>
               </div>
 
               <Separator />

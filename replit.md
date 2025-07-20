@@ -1,6 +1,13 @@
 # Replit.md
 
 ## Recent Changes
+- **January 20, 2025**: Added cloud Docker image automation with GitHub Actions integration
+  - Created GitHub Actions workflows for automatic Docker image building and pushing
+  - Built support for GitHub Container Registry (ghcr.io) and Docker Hub deployment
+  - Added cloud deployment scripts with image pulling from registries
+  - Created comprehensive cloud deployment guide with multiple deployment options
+  - Integrated cloud Docker setup into the deployment wizard interface
+  - Implemented multi-platform builds (AMD64, ARM64) with build caching optimization
 - **January 20, 2025**: Created comprehensive Docker deployment package for VPS hosting
   - Built complete Docker infrastructure with Dockerfile, docker-compose.yml, and nginx configuration
   - Created automated deployment scripts (build-image.sh, import-and-deploy.sh, deploy.sh)
