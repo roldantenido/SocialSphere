@@ -1,10 +1,17 @@
 # Replit.md
 
 ## Recent Changes
+- **January 20, 2025**: Created comprehensive Docker deployment package for VPS hosting
+  - Built complete Docker infrastructure with Dockerfile, docker-compose.yml, and nginx configuration
+  - Created automated deployment scripts (build-image.sh, import-and-deploy.sh, deploy.sh)
+  - Implemented production-ready setup with PostgreSQL, SSL support, and security headers
+  - Added comprehensive deployment guides (DEPLOYMENT.md, IMAGE-DEPLOYMENT.md, DOCKER-EXPORT-GUIDE.md)
+  - Configured proper file upload handling and server payload limits (50MB) for Docker environment
+  - Included health checks, auto-restart policies, and database backup procedures
 - **January 20, 2025**: Enhanced media posting with file browsing and improved photo/video functionality
   - Replaced URL input with native file browsing for photo and video uploads
   - Added separate Photo, Video, and Reels upload buttons with file selection dialogs
-  - Implemented file size validation (10MB images, 100MB videos, 50MB reels) 
+  - Implemented file size validation (5MB images, 25MB videos, 15MB reels optimized for base64)
   - Added video duration check for Reels (max 60 seconds)
   - Enhanced media preview with file name, size display, and remove functionality
   - Fixed photo display issues by implementing base64 conversion for file storage
