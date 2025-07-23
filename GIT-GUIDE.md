@@ -248,16 +248,24 @@ EOF
 
 ### Common Issues
 
-1. **"Index is currently locked" error:**
+1. **"Index is currently locked" or "Unknown Git Error":**
    ```bash
-   # Check if git processes are running
-   ps aux | grep git
+   # Remove all lock files
+   rm -f .git/index.lock .git/HEAD.lock .git/config.lock .git/refs/heads/main.lock
    
-   # Remove the lock file if no git processes are running
-   rm -f .git/index.lock
+   # Reset Git index
+   git reset --mixed HEAD
    
-   # Then try your git command again
-   git status
+   # Check repository health
+   git fsck --full
+   
+   # If all else fails, start fresh:
+   rm -rf .git
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/username/repo.git
+   git push -u origin main
    ```
 
 2. **"Permission denied" error:**

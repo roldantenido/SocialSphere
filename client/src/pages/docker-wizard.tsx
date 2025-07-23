@@ -702,13 +702,33 @@ jobs:
 
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
                   <div>
-                    <h4 className="font-medium">Git Guide</h4>
-                    <p className="text-sm text-muted-foreground">Complete guide for Git push/pull operations</p>
+                    <h4 className="font-medium">Git Guide & Fix Script</h4>
+                    <p className="text-sm text-muted-foreground">Complete guide and troubleshooting for Git issues</p>
                   </div>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      const gitGuide = `# Quick Git Reference for Your Social Media App
+                      const gitGuide = `# Git Recovery and Setup Guide
+
+## Fix Git Issues (Run this first if you have errors)
+\`\`\`bash
+# Remove lock files
+rm -f .git/index.lock .git/HEAD.lock .git/config.lock .git/refs/heads/main.lock
+
+# Reset Git index
+git reset --mixed HEAD
+
+# Check repository health
+git fsck --full
+
+# If repository is corrupted, start fresh:
+rm -rf .git
+git init
+git add .
+git commit -m "Initial commit: Social media app"
+git remote add origin https://github.com/username/social-media-app.git
+git push -u origin main
+\`\`\`
 
 ## First Time Setup
 \`\`\`bash
@@ -716,7 +736,7 @@ jobs:
 git config --global user.name "Your Name"
 git config --global user.email "your@email.com"
 
-# Initialize repository
+# Initialize repository (if not done above)
 git init
 git add .
 git commit -m "Initial commit: Social media app"
@@ -757,12 +777,12 @@ After pushing to GitHub, your Docker images will be built automatically!`;
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = 'git-guide.txt';
+                      a.download = 'git-recovery-guide.txt';
                       a.click();
                     }}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Git Guide
+                    Git Recovery Guide
                   </Button>
                 </div>
               </div>
