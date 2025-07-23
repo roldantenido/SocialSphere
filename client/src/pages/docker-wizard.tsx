@@ -699,6 +699,72 @@ jobs:
                     GitHub Actions
                   </Button>
                 </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
+                  <div>
+                    <h4 className="font-medium">Git Guide</h4>
+                    <p className="text-sm text-muted-foreground">Complete guide for Git push/pull operations</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const gitGuide = `# Quick Git Reference for Your Social Media App
+
+## First Time Setup
+\`\`\`bash
+# Configure Git
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+
+# Initialize repository
+git init
+git add .
+git commit -m "Initial commit: Social media app"
+
+# Connect to GitHub (replace with your repo URL)
+git remote add origin https://github.com/username/social-media-app.git
+git push -u origin main
+\`\`\`
+
+## Daily Workflow
+\`\`\`bash
+# Check status
+git status
+
+# Add your changes
+git add .
+git commit -m "Add new feature or fix"
+
+# Push to GitHub (triggers automatic Docker build)
+git push
+
+# Pull latest changes
+git pull
+\`\`\`
+
+## Quick Commands
+\`\`\`bash
+git status          # See what changed
+git add .           # Stage all changes  
+git commit -m "msg" # Save changes
+git push            # Upload to GitHub
+git pull            # Download from GitHub
+\`\`\`
+
+After pushing to GitHub, your Docker images will be built automatically!`;
+
+                      const blob = new Blob([gitGuide], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'git-guide.txt';
+                      a.click();
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Git Guide
+                  </Button>
+                </div>
               </div>
 
               <Separator />
