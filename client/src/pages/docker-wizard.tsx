@@ -499,6 +499,83 @@ ${sslConfig}
                   </Button>
                 </div>
 
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-orange-50 dark:bg-orange-950">
+                  <div>
+                    <h4 className="font-medium">aapanel Deployment Script</h4>
+                    <p className="text-sm text-muted-foreground">One-command installer for aapanel VPS</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const aapanelScript = `#!/bin/bash
+# aapanel One-Command Installer for Social Media App
+set -e
+
+echo "🚀 Installing Social Media App on aapanel..."
+
+# Check if aapanel is installed
+if ! command -v bt &> /dev/null; then
+    echo "❌ aapanel not found! Please install aapanel first:"
+    echo "wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh && sudo bash install.sh"
+    exit 1
+fi
+
+# Install Docker if not present
+if ! command -v docker &> /dev/null; then
+    echo "📦 Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    sudo usermod -aG docker $USER
+    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+fi
+
+# Create app directory
+APP_DIR="/www/wwwroot/social-media-app"
+sudo mkdir -p $APP_DIR
+cd $APP_DIR
+
+# Get configuration
+read -p "Enter your domain (optional): " DOMAIN
+read -s -p "Enter PostgreSQL password: " DB_PASSWORD
+echo ""
+
+# Create .env file
+cat > .env << EOF
+POSTGRES_DB=social_media
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=$DB_PASSWORD
+NODE_ENV=production
+PORT=5000
+DATABASE_URL=postgresql://postgres:$DB_PASSWORD@postgres:5432/social_media
+EOF
+
+# Download docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/yourusername/social-media-app/main/docker-compose.yml
+
+# Deploy
+echo "🚀 Starting deployment..."
+docker-compose up -d
+
+echo "✅ Deployment complete!"
+echo "🌐 Access your app at: http://$(curl -s ifconfig.me):5000"
+if [ ! -z "$DOMAIN" ]; then
+    echo "🌐 Configure $DOMAIN in aapanel to use reverse proxy to localhost:5000"
+fi`;
+
+                      const blob = new Blob([aapanelScript], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'aapanel-install.sh';
+                      a.click();
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    aapanel Script
+                  </Button>
+                </div>
+
                 {config.nginxEnabled && (
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>

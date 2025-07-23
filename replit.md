@@ -1,6 +1,13 @@
 # Replit.md
 
 ## Recent Changes
+- **January 21, 2025**: Added aapanel integration for simplified VPS deployment
+  - Created aapanel-specific deployment script with interactive configuration
+  - Built automatic Docker installation and container management for aapanel
+  - Added nginx configuration template optimized for aapanel reverse proxy setup
+  - Created comprehensive aapanel deployment guide with web panel integration
+  - Integrated aapanel installer into the deployment wizard interface
+  - Implemented automatic SSL management through aapanel's certificate system
 - **January 20, 2025**: Added cloud Docker image automation with GitHub Actions integration
   - Created GitHub Actions workflows for automatic Docker image building and pushing
   - Built support for GitHub Container Registry (ghcr.io) and Docker Hub deployment
