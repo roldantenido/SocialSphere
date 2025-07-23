@@ -702,87 +702,79 @@ jobs:
 
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
                   <div>
-                    <h4 className="font-medium">Git Guide & Fix Script</h4>
-                    <p className="text-sm text-muted-foreground">Complete guide and troubleshooting for Git issues</p>
+                    <h4 className="font-medium">Complete Deployment Guide</h4>
+                    <p className="text-sm text-muted-foreground">Git-free deployment methods for aapanel and VPS</p>
                   </div>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      const gitGuide = `# Git Recovery and Setup Guide
+                      const deploymentGuide = `# Complete Deployment Guide - No Git Required
 
-## Fix Git Issues (Run this first if you have errors)
+## Method 1: Direct Upload to aapanel VPS
+
+### Step 1: Upload Files
 \`\`\`bash
-# Remove lock files
-rm -f .git/index.lock .git/HEAD.lock .git/config.lock .git/refs/heads/main.lock
+# Create directory on VPS
+mkdir -p /www/wwwroot/social-media-app
+cd /www/wwwroot/social-media-app
 
-# Reset Git index
-git reset --mixed HEAD
-
-# Check repository health
-git fsck --full
-
-# If repository is corrupted, start fresh:
-rm -rf .git
-git init
-git add .
-git commit -m "Initial commit: Social media app"
-git remote add origin https://github.com/username/social-media-app.git
-git push -u origin main
+# Upload via SCP or aapanel File Manager
+# All your application files need to be uploaded
 \`\`\`
 
-## First Time Setup
+### Step 2: Install Docker
 \`\`\`bash
-# Configure Git
-git config --global user.name "Your Name"
-git config --global user.email "your@email.com"
-
-# Initialize repository (if not done above)
-git init
-git add .
-git commit -m "Initial commit: Social media app"
-
-# Connect to GitHub (replace with your repo URL)
-git remote add origin https://github.com/username/social-media-app.git
-git push -u origin main
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
 \`\`\`
 
-## Daily Workflow
+### Step 3: Configure Environment
 \`\`\`bash
+# Create .env file
+cat > .env << 'EOF'
+POSTGRES_DB=social_media
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_secure_password
+NODE_ENV=production
+PORT=5000
+DATABASE_URL=postgresql://postgres:your_secure_password@postgres:5432/social_media
+EOF
+\`\`\`
+
+### Step 4: Deploy
+\`\`\`bash
+# Start application
+docker-compose up -d
+
 # Check status
-git status
-
-# Add your changes
-git add .
-git commit -m "Add new feature or fix"
-
-# Push to GitHub (triggers automatic Docker build)
-git push
-
-# Pull latest changes
-git pull
+docker-compose ps
 \`\`\`
 
-## Quick Commands
-\`\`\`bash
-git status          # See what changed
-git add .           # Stage all changes  
-git commit -m "msg" # Save changes
-git push            # Upload to GitHub
-git pull            # Download from GitHub
-\`\`\`
+## aapanel Configuration
 
-After pushing to GitHub, your Docker images will be built automatically!`;
+1. **Website**: Add site with your domain
+2. **Reverse Proxy**: Point to http://127.0.0.1:5000
+3. **SSL**: Use Let's Encrypt for HTTPS
 
-                      const blob = new Blob([gitGuide], { type: 'text/plain' });
+## Access Your App
+- Domain: https://your-domain.com
+- Direct: http://your-vps-ip:5000
+
+No Git required - just upload and deploy!`;
+
+                      const blob = new Blob([deploymentGuide], { type: 'text/plain' });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement('a');
                       a.href = url;
-                      a.download = 'git-recovery-guide.txt';
+                      a.download = 'complete-deployment-guide.txt';
                       a.click();
                     }}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Git Recovery Guide
+                    Deployment Guide
                   </Button>
                 </div>
               </div>
