@@ -45,10 +45,10 @@ export default function DockerWizard() {
 
   const copyToClipboard = (text: string, stepNumber: number) => {
     navigator.clipboard.writeText(text);
-    setCopiedSteps(prev => new Set([...prev, stepNumber]));
+    setCopiedSteps(prev => new Set(Array.from(prev).concat([stepNumber])));
     setTimeout(() => {
       setCopiedSteps(prev => {
-        const newSet = new Set(prev);
+        const newSet = new Set(Array.from(prev));
         newSet.delete(stepNumber);
         return newSet;
       });

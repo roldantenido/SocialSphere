@@ -248,13 +248,25 @@ EOF
 
 ### Common Issues
 
-1. **"Permission denied" error:**
+1. **"Index is currently locked" error:**
+   ```bash
+   # Check if git processes are running
+   ps aux | grep git
+   
+   # Remove the lock file if no git processes are running
+   rm -f .git/index.lock
+   
+   # Then try your git command again
+   git status
+   ```
+
+2. **"Permission denied" error:**
    ```bash
    # Make sure you're authenticated
    git config --list | grep user
    ```
 
-2. **"Updates were rejected" error:**
+3. **"Updates were rejected" error:**
    ```bash
    # Pull latest changes first
    git pull origin main
@@ -262,7 +274,7 @@ EOF
    git push
    ```
 
-3. **Merge conflicts:**
+4. **Merge conflicts:**
    ```bash
    # Edit conflicted files manually
    # Then add and commit
@@ -270,7 +282,7 @@ EOF
    git commit -m "Resolve merge conflicts"
    ```
 
-4. **Forgot to pull before making changes:**
+5. **Forgot to pull before making changes:**
    ```bash
    # Stash your changes
    git stash
