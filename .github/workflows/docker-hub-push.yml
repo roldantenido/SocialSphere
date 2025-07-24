@@ -39,7 +39,7 @@ jobs:
           type=semver,pattern={{major}}.{{minor}}
           type=raw,value=latest,enable={{is_default_branch}}
 
-    - name: Build and push Docker image
+    - name: Build and push application image
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -51,7 +51,124 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Docker Hub Description
+    - name: Create deployment artifacts
+      run: |
+        # Create deployment package with docker-compose files
+        mkdir -p deployment-package
+        
+        # Copy docker-compose files
+        cp docker-compose.yml deployment-package/
+        cp docker-compose.production.yml deployment-package/
+        cp .env.example deployment-package/
+        
+        # Create one-click deployment script
+        cat > deployment-package/deploy.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "🚀 Deploying Social Media App with Database..."
+        
+        # Check if .env exists
+        if [ ! -f ".env" ]; then
+            if [ -f ".env.example" ]; then
+                echo "📋 Creating .env from example..."
+                cp .env.example .env
+                echo "⚠️  Please edit .env file with your database password!"
+                echo "Setting a secure password..."
+                SECURE_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
+                sed -i "s/your_secure_password/$SECURE_PASSWORD/g" .env
+                echo "✅ Generated secure database password"
+            fi
+        fi
+        
+        # Pull latest images
+        echo "📥 Pulling latest images..."
+        docker-compose pull
+        
+        # Start services
+        echo "🚀 Starting services..."
+        docker-compose up -d
+        
+        echo "✅ Deployment complete!"
+        echo "🌐 Application: http://localhost:5000"
+        echo "🗄️  Database: PostgreSQL running on port 5432"
+        echo "📝 View logs: docker-compose logs -f"
+        EOF
+        
+        chmod +x deployment-package/deploy.sh
+        
+        # Create database initialization script
+        cat > deployment-package/init-db.sql << 'EOF'
+        -- Social Media App Database Initialization
+        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+        
+        -- Create tables will be handled by the application
+        -- This file can be extended with additional database setup
+        EOF
+        
+        # Create README for deployment
+        cat > deployment-package/README.md << 'EOF'
+        # Social Media App - Docker Deployment
+        
+        This package contains everything needed to deploy the social media application with PostgreSQL database.
+        
+        ## Quick Start
+        
+        1. Extract this package to your server
+        2. Run: `./deploy.sh`
+        3. Access your app at http://localhost:5000
+        
+        ## What's Included
+        
+        - **Application**: Node.js social media app
+        - **Database**: PostgreSQL 15 with persistent storage
+        - **Environment**: Production-ready configuration
+        
+        ## Manual Deployment
+        
+        ```bash
+        # 1. Configure environment
+        cp .env.example .env
+        nano .env  # Edit database password
+        
+        # 2. Start services
+        docker-compose up -d
+        
+        # 3. Check status
+        docker-compose ps
+        ```
+        
+        ## Services
+        
+        - **App**: Port 5000 (web interface)
+        - **Database**: Port 5432 (PostgreSQL)
+        
+        ## Management
+        
+        ```bash
+        # View logs
+        docker-compose logs -f
+        
+        # Stop services
+        docker-compose down
+        
+        # Update app
+        docker-compose pull app
+        docker-compose up -d
+        ```
+        EOF
+        
+        # Package everything
+        tar -czf deployment-package.tar.gz deployment-package/
+
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-package
+        path: deployment-package.tar.gz
+        retention-days: 30
+
+    - name: Update Docker Hub Description
       uses: peter-evans/dockerhub-description@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
