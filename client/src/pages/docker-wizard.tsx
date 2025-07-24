@@ -640,14 +640,14 @@ fi`;
 
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50 dark:bg-green-950">
                   <div>
-                    <h4 className="font-medium">Cloud Docker Setup</h4>
-                    <p className="text-sm text-muted-foreground">GitHub Actions files for automatic Docker builds</p>
+                    <h4 className="font-medium">GitHub Actions (Fixed)</h4>
+                    <p className="text-sm text-muted-foreground">No Docker Hub issues - GitHub Container Registry only</p>
                   </div>
                   <Button
                     variant="outline"
                     onClick={() => {
-                      const githubWorkflow = `# This file should be placed in .github/workflows/docker-build.yml
-# It will automatically build and push Docker images when you push to GitHub
+                      const githubWorkflow = `# GitHub Container Registry Only - No Docker Hub Issues!
+# Place this in .github/workflows/docker-build.yml
 
 name: Build and Push Docker Image
 
@@ -655,6 +655,12 @@ on:
   push:
     branches: [ main, master ]
     tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: \${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -671,21 +677,39 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
       with:
-        registry: ghcr.io
+        registry: \${{ env.REGISTRY }}
         username: \${{ github.actor }}
         password: \${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: \${{ env.REGISTRY }}/\${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         platforms: linux/amd64,linux/arm64
-        push: true
-        tags: ghcr.io/\${{ github.repository }}:latest
+        push: \${{ github.event_name != 'pull_request' }}
+        tags: \${{ steps.meta.outputs.tags }}
+        labels: \${{ steps.meta.outputs.labels }}
         cache-from: type=gha
-        cache-to: type=gha,mode=max`;
+        cache-to: type=gha,mode=max
+
+# ✅ No Docker Hub authentication required!
+# ✅ Images available at: ghcr.io/roldantenido/socialsphere:latest
+# ✅ Automatic builds on every push`;
 
                       const blob = new Blob([githubWorkflow], { type: 'text/plain' });
                       const url = URL.createObjectURL(blob);
