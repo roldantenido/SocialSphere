@@ -47,15 +47,15 @@ COPY --chown=app:nodejs ./shared ./shared
 USER app
 
 # Expose port
-EXPOSE 5000
+EXPOSE 50725
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=5000
+ENV PORT=50725
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "const http = require('http'); http.get('http://localhost:5000/api/auth/me', (res) => { process.exit(res.statusCode === 401 ? 0 : 1); }).on('error', () => process.exit(1));"
+  CMD node -e "const http = require('http'); http.get('http://localhost:50725/api/auth/me', (res) => { process.exit(res.statusCode === 401 ? 0 : 1); }).on('error', () => process.exit(1));"
 
 # Start the application
 ENTRYPOINT ["dumb-init", "--"]
