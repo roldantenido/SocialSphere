@@ -35,7 +35,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 50725
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-your_secure_password}@postgres:5432/${POSTGRES_DB:-social_media}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-your_secure_password}@postgres:5432/${POSTGRES_DB:-social_media}
     ports:
       - "50725:50725"
     depends_on:
