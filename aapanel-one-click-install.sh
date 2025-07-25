@@ -164,10 +164,10 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 5000
+      PORT: 50725
       DATABASE_URL: \${DATABASE_URL}
     ports:
-      - "5000:5000"
+      - "50725:50725"
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,7 +176,7 @@ services:
     volumes:
       - ./uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/auth/me"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:50725/api/auth/me"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -282,16 +282,16 @@ server {
     proxy_connect_timeout 30s;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:50725;
     }
 
     location /api/ {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:50725;
     }
 
     # WebSocket support for real-time features
     location /socket.io/ {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://127.0.0.1:50725;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -377,8 +377,8 @@ if docker-compose ps | grep -q "Up"; then
             echo -e "  🌍 HTTP:  ${CYAN}http://www.$DOMAIN${NC}"
         fi
     fi
-    echo -e "  📡 Direct: ${CYAN}http://$SERVER_IP:5000${NC}"
-    echo -e "  🏠 Local:  ${CYAN}http://localhost:5000${NC}"
+    echo -e "  📡 Direct: ${CYAN}http://$SERVER_IP:50725${NC}"
+    echo -e "  🏠 Local:  ${CYAN}http://localhost:50725${NC}"
     echo ""
     echo -e "${GREEN}🔐 Database Credentials:${NC}"
     echo -e "  Database: ${CYAN}social_media${NC}"
@@ -415,10 +415,10 @@ else
     echo -e "${YELLOW}🔧 Troubleshooting:${NC}"
     echo "Check logs: docker-compose logs"
     echo "Check status: docker-compose ps"
-    echo "Check ports: netstat -tlnp | grep 5000"
+    echo "Check ports: netstat -tlnp | grep 50725"
     echo ""
     echo "Common issues:"
-    echo "• Port 5000 already in use"
+    echo "• Port 50725 already in use"
     echo "• Database connection issues"
     echo "• Docker image not found"
     exit 1
@@ -461,8 +461,8 @@ Generated: $(date)
 
 Access URLs:
 $([ ! -z "$DOMAIN" ] && echo "Domain: http://$DOMAIN")
-Direct: http://$SERVER_IP:5000
-Local: http://localhost:5000
+Direct: http://$SERVER_IP:50725
+Local: http://localhost:50725
 
 Database:
 Host: localhost:5432
