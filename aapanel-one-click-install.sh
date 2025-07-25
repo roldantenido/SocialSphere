@@ -137,7 +137,7 @@ services:
 
   # Main Application
   app:
-    image: ghcr.io/roldantenido/socialsphere:latest
+    build: .
     container_name: social_media_app
     restart: unless-stopped
     environment:
@@ -235,29 +235,87 @@ echo -e "${CYAN}🌐 Application will be accessible directly via port 50725${NC}
 echo ""
 echo -e "${CYAN}🚀 Deploying the application...${NC}"
 
-# Pull Docker image from GitHub Container Registry
-echo "📦 Pulling Docker image from GitHub Container Registry..."
+# Build Docker image locally since registry pull failed
+echo "🔨 Building Docker image locally..."
 
-# Using GitHub username: rtenido
+# Create Dockerfile if it doesn't exist
+if [ ! -f "Dockerfile" ]; then
+    echo "📝 Creating Dockerfile..."
+    cat > Dockerfile << 'EOF'
+# Multi-stage Docker build for the social media application
+FROM node:20-alpine AS builder
 
-# Update docker-compose.yml with actual image URL
-sed -i "s|\$GITHUB_USERNAME|rtenido|g" docker-compose.yml
+# Set working directory
+WORKDIR /app
 
-# Pull the latest image
-if docker pull ghcr.io/roldantenido/socialsphere:latest; then
-    echo -e "${GREEN}✅ Docker image pulled successfully${NC}"
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
+
+# Copy source code (excluding node_modules)
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS production
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create app user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S app -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install only production dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application from builder stage
+COPY --from=builder --chown=app:nodejs /app/dist ./dist
+COPY --from=builder --chown=app:nodejs /app/node_modules ./node_modules
+
+# Copy any other necessary files
+COPY --chown=app:nodejs ./drizzle.config.ts ./
+COPY --chown=app:nodejs ./shared ./shared
+
+# Switch to non-root user
+USER app
+
+# Expose port
+EXPOSE 50725
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=50725
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "const http = require('http'); http.get('http://localhost:50725/api/auth/me', (res) => { process.exit(res.statusCode === 401 ? 0 : 1); }).on('error', () => process.exit(1));"
+
+# Start the application
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/index.js"]
+EOF
+fi
+
+# Update docker-compose.yml to build locally instead of pulling
+sed -i 's/image: ghcr.io\/roldantenido\/socialsphere:latest/build: ./' docker-compose.yml
+
+# Build the Docker image
+echo "🔨 Building application image..."
+if docker build -t socialsphere:latest .; then
+    echo -e "${GREEN}✅ Docker image built successfully${NC}"
 else
-    echo -e "${YELLOW}⚠️  Could not pull from GitHub Container Registry${NC}"
-    echo "Make sure:"
-    echo "1. GitHub Actions have built and pushed the image"
-    echo "2. The repository is public OR you're logged in to ghcr.io"
-    echo "3. The image exists at: ghcr.io/roldantenido/socialsphere:latest"
-
-    # Try to authenticate with GitHub
-    echo ""
-    echo "To authenticate with GitHub Container Registry:"
-    echo "docker login ghcr.io -u rtenido"
-
+    echo -e "${RED}❌ Failed to build Docker image${NC}"
     exit 1
 fi
 
