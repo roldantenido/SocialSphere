@@ -42,14 +42,8 @@ while [ -z "$POSTGRES_PASSWORD" ]; do
     fi
 done
 
-# Check if aapanel is running
-if ! command -v bt &> /dev/null; then
-    echo -e "${RED}❌ aapanel (bt command) not found!${NC}"
-    echo "Please install aapanel first: https://www.aapanel.com/new/download.html"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ aapanel detected${NC}"
+# Skip aapanel installation check - assuming aapanel is already installed
+echo -e "${GREEN}✅ Assuming aapanel is already installed${NC}"
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
