@@ -151,7 +151,7 @@ services:
 
   # Main Application
   app:
-    image: ghcr.io/rtenido/socialsphere:latest
+    image: ghcr.io/roldantenido/socialsphere:latest
     container_name: social_media_app
     restart: unless-stopped
     environment:
@@ -314,20 +314,20 @@ echo "📦 Pulling Docker image from GitHub Container Registry..."
 sed -i "s|\$GITHUB_USERNAME|rtenido|g" docker-compose.yml
 
 # Pull the latest image
-if docker pull ghcr.io/rtenido/socialsphere:latest; then
+if docker pull ghcr.io/roldantenido/socialsphere:latest; then
     echo -e "${GREEN}✅ Docker image pulled successfully${NC}"
 else
     echo -e "${YELLOW}⚠️  Could not pull from GitHub Container Registry${NC}"
     echo "Make sure:"
     echo "1. GitHub Actions have built and pushed the image"
     echo "2. The repository is public OR you're logged in to ghcr.io"
-    echo "3. The image exists at: ghcr.io/rtenido/socialsphere:latest"
-    
+    echo "3. The image exists at: ghcr.io/roldantenido/socialsphere:latest"
+
     # Try to authenticate with GitHub
     echo ""
     echo "To authenticate with GitHub Container Registry:"
     echo "docker login ghcr.io -u rtenido"
-    
+
     exit 1
 fi
 
