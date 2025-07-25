@@ -151,7 +151,9 @@ services:
 
   # Main Application
   app:
-    image: ghcr.io/yourusername/social-media-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: social_media_app
     restart: unless-stopped
     environment:
@@ -305,27 +307,25 @@ fi
 echo ""
 echo -e "${CYAN}🚀 Deploying the application...${NC}"
 
-# Pull Docker image (or build if dockerfile exists)
-echo "📥 Pulling Docker image..."
-if docker pull ghcr.io/yourusername/social-media-app:latest 2>/dev/null; then
-    echo -e "${GREEN}✅ Docker image pulled successfully${NC}"
-else
-    echo -e "${YELLOW}⚠️  Could not pull image from registry${NC}"
-    echo "Checking for local Dockerfile..."
-
-    if [ -f "Dockerfile" ]; then
-        echo "📦 Building image locally..."
-        docker build -t social-media-app:latest .
-        # Update docker-compose.yml to use local image
-        sed -i 's|ghcr.io/yourusername/social-media-app:latest|social-media-app:latest|g' docker-compose.yml
-        echo -e "${GREEN}✅ Local image built successfully${NC}"
-    else
-        echo -e "${RED}❌ No Dockerfile found. Please provide application source code.${NC}"
-        echo "You can:"
-        echo "1. Upload your source code to this directory"
-        echo "2. Or update docker-compose.yml with the correct image URL"
-        exit 1
+# Build Docker image locally since we have the source code
+echo "📦 Building Docker image from source..."
+if [ -f "Dockerfile" ]; then
+    # Copy source files to deployment directory if not already there
+    if [ ! -f "$APP_DIR/package.json" ]; then
+        echo "📂 Copying application source files..."
+        cp -r /path/to/your/source/* $APP_DIR/ 2>/dev/null || true
     fi
+    
+    # Build the image
+    docker build -t social-media-app:latest $APP_DIR
+    echo -e "${GREEN}✅ Docker image built successfully${NC}"
+    
+    # Update docker-compose.yml to use local image
+    sed -i 's|ghcr.io/yourusername/social-media-app:latest|social-media-app:latest|g' docker-compose.yml
+else
+    echo -e "${RED}❌ No Dockerfile found in $APP_DIR${NC}"
+    echo "Please ensure your application source code with Dockerfile is available."
+    exit 1
 fi
 
 # Stop any existing containers
