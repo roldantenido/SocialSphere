@@ -151,9 +151,7 @@ services:
 
   # Main Application
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/$GITHUB_USERNAME/socialsphere:latest
     container_name: social_media_app
     restart: unless-stopped
     environment:
@@ -307,24 +305,32 @@ fi
 echo ""
 echo -e "${CYAN}🚀 Deploying the application...${NC}"
 
-# Build Docker image locally since we have the source code
-echo "📦 Building Docker image from source..."
-if [ -f "Dockerfile" ]; then
-    # Copy source files to deployment directory if not already there
-    if [ ! -f "$APP_DIR/package.json" ]; then
-        echo "📂 Copying application source files..."
-        cp -r /path/to/your/source/* $APP_DIR/ 2>/dev/null || true
-    fi
-    
-    # Build the image
-    docker build -t social-media-app:latest $APP_DIR
-    echo -e "${GREEN}✅ Docker image built successfully${NC}"
-    
-    # Update docker-compose.yml to use local image
-    sed -i 's|ghcr.io/yourusername/social-media-app:latest|social-media-app:latest|g' docker-compose.yml
+# Pull Docker image from GitHub Container Registry
+echo "📦 Pulling Docker image from GitHub Container Registry..."
+
+# Prompt for GitHub username if not set
+if [ -z "$GITHUB_USERNAME" ]; then
+    read -p "Enter your GitHub username: " GITHUB_USERNAME
+fi
+
+# Update docker-compose.yml with actual image URL
+sed -i "s|\$GITHUB_USERNAME|$GITHUB_USERNAME|g" docker-compose.yml
+
+# Pull the latest image
+if docker pull ghcr.io/$GITHUB_USERNAME/socialsphere:latest; then
+    echo -e "${GREEN}✅ Docker image pulled successfully${NC}"
 else
-    echo -e "${RED}❌ No Dockerfile found in $APP_DIR${NC}"
-    echo "Please ensure your application source code with Dockerfile is available."
+    echo -e "${YELLOW}⚠️  Could not pull from GitHub Container Registry${NC}"
+    echo "Make sure:"
+    echo "1. GitHub Actions have built and pushed the image"
+    echo "2. The repository is public OR you're logged in to ghcr.io"
+    echo "3. The image exists at: ghcr.io/$GITHUB_USERNAME/socialsphere:latest"
+    
+    # Try to authenticate with GitHub
+    echo ""
+    echo "To authenticate with GitHub Container Registry:"
+    echo "docker login ghcr.io -u $GITHUB_USERNAME"
+    
     exit 1
 fi
 
