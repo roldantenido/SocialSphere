@@ -44,16 +44,8 @@ fi
 
 echo -e "${CYAN}🔍 Checking system requirements...${NC}"
 
-# Check if aapanel is installed
-if command_exists bt; then
-    echo -e "${GREEN}✅ aapanel detected${NC}"
-else
-    echo -e "${RED}❌ aapanel not found!${NC}"
-    echo -e "${YELLOW}Installing aapanel first...${NC}"
-    echo "Please run: wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh && sudo bash install.sh"
-    echo "Then run this installer again."
-    exit 1
-fi
+# Skip aapanel installation check - assuming aapanel is already installed
+echo -e "${GREEN}✅ Assuming aapanel is already installed${NC}"
 
 # Get user input for configuration
 echo ""
