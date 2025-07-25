@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # aapanel One-Click Docker Installer for Social Media App
@@ -56,17 +55,18 @@ else
     exit 1
 fi
 
-# Get user input with defaults
+# Get user input for configuration
 echo ""
-echo -e "${PURPLE}📝 Configuration Setup${NC}"
-read -p "Enter your domain name (press Enter for IP-only access): " DOMAIN
-read -p "Enter PostgreSQL password (press Enter for auto-generated): " USER_PASSWORD
+echo -e "${CYAN}🔧 Configuration Setup${NC}"
+read -p "Enter your domain name (optional, press Enter to skip): " DOMAIN
 
-# Generate secure password if not provided
-if [ -z "$USER_PASSWORD" ]; then
-    USER_PASSWORD=$(generate_password)
-    echo -e "${YELLOW}Generated secure password: $USER_PASSWORD${NC}"
-fi
+echo -e "${GREEN}Generating random database credentials...${NC}"
+
+# Generate random database credentials
+DB_USER=$(generate_password)
+DB_PASSWORD=$(generate_password)
+echo -e "${YELLOW}Generated database username: $DB_USER${NC}"
+echo -e "${YELLOW}Generated database password: $DB_PASSWORD${NC}"
 
 # SSL choice
 SSL_ENABLED=false
@@ -117,13 +117,13 @@ echo -e "${CYAN}⚙️  Creating environment configuration...${NC}"
 cat > .env << EOF
 # Database Configuration
 POSTGRES_DB=social_media
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=$USER_PASSWORD
+POSTGRES_USER=$DB_USER
+POSTGRES_PASSWORD=$DB_PASSWORD
 
 # Application Configuration
 NODE_ENV=production
 PORT=5000
-DATABASE_URL=postgresql://postgres:$USER_PASSWORD@postgres:5432/social_media
+DATABASE_URL=postgresql://postgres:$DB_PASSWORD@postgres:5432/social_media
 
 # Security
 CORS_ORIGIN=*
@@ -142,9 +142,9 @@ services:
     container_name: social_media_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-social_media}
+      POSTGRES_USER: ${POSTGRES_USER:-$DB_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-$DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -259,20 +259,20 @@ if [ ! -z "$DOMAIN" ]; then
     # Create nginx configuration
     NGINX_CONFIG="/www/server/panel/vhost/nginx/${DOMAIN}.conf"
     $SUDO mkdir -p "$(dirname "$NGINX_CONFIG")"
-    
+
     $SUDO tee "$NGINX_CONFIG" > /dev/null << EOF
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
-    
+
     # Security headers
     add_header X-Frame-Options DENY;
     add_header X-Content-Type-Options nosniff;
     add_header X-XSS-Protection "1; mode=block";
-    
+
     # Client max body size for file uploads
     client_max_body_size 50M;
-    
+
     # Proxy settings
     proxy_set_header Host \$host;
     proxy_set_header X-Real-IP \$remote_addr;
@@ -280,15 +280,15 @@ server {
     proxy_set_header X-Forwarded-Proto \$scheme;
     proxy_read_timeout 60s;
     proxy_connect_timeout 30s;
-    
+
     location / {
         proxy_pass http://127.0.0.1:5000;
     }
-    
+
     location /api/ {
         proxy_pass http://127.0.0.1:5000;
     }
-    
+
     # WebSocket support for real-time features
     location /socket.io/ {
         proxy_pass http://127.0.0.1:5000;
@@ -300,7 +300,7 @@ server {
 EOF
 
     echo -e "${GREEN}✅ Nginx configuration created for $DOMAIN${NC}"
-    
+
     # Test and reload nginx
     if $SUDO nginx -t 2>/dev/null; then
         $SUDO nginx -s reload
@@ -320,7 +320,7 @@ if docker pull ghcr.io/yourusername/social-media-app:latest 2>/dev/null; then
 else
     echo -e "${YELLOW}⚠️  Could not pull image from registry${NC}"
     echo "Checking for local Dockerfile..."
-    
+
     if [ -f "Dockerfile" ]; then
         echo "📦 Building image locally..."
         docker build -t social-media-app:latest .
@@ -354,10 +354,10 @@ echo -e "${CYAN}🔍 Checking deployment status...${NC}"
 # Check if containers are running
 if docker-compose ps | grep -q "Up"; then
     echo -e "${GREEN}🎉 Deployment successful!${NC}"
-    
+
     # Get server IP
     SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "YOUR_SERVER_IP")
-    
+
     echo ""
     echo -e "${BLUE}================================================${NC}"
     echo -e "${BLUE}          🎯 DEPLOYMENT COMPLETE! 🎯           ${NC}"
@@ -367,7 +367,7 @@ if docker-compose ps | grep -q "Up"; then
     docker-compose ps
     echo ""
     echo -e "${GREEN}🌐 Access Your Application:${NC}"
-    
+
     if [ ! -z "$DOMAIN" ]; then
         if [ "$SSL_ENABLED" = true ]; then
             echo -e "  🔒 HTTPS: ${CYAN}https://$DOMAIN${NC}"
@@ -382,8 +382,8 @@ if docker-compose ps | grep -q "Up"; then
     echo ""
     echo -e "${GREEN}🔐 Database Credentials:${NC}"
     echo -e "  Database: ${CYAN}social_media${NC}"
-    echo -e "  Username: ${CYAN}postgres${NC}"
-    echo -e "  Password: ${CYAN}$USER_PASSWORD${NC}"
+    echo -e "  Username: ${CYAN}$DB_USER${NC}"
+    echo -e "  Password: ${CYAN}$DB_PASSWORD${NC}"
     echo ""
     echo -e "${GREEN}🛠️  Management Commands:${NC}"
     echo -e "  📄 View logs:    ${CYAN}docker-compose logs -f${NC}"
@@ -398,7 +398,7 @@ if docker-compose ps | grep -q "Up"; then
     echo -e "  • View logs in Logs section"
     echo -e "  • File management in File Manager"
     echo ""
-    
+
     if [ "$SSL_ENABLED" = true ] && [ ! -z "$DOMAIN" ]; then
         echo -e "${YELLOW}🔒 SSL Setup Reminder:${NC}"
         echo "  1. Go to aapanel → Website → $DOMAIN → SSL"
@@ -406,9 +406,9 @@ if docker-compose ps | grep -q "Up"; then
         echo "  3. Enable 'Force HTTPS redirect'"
         echo ""
     fi
-    
+
     echo -e "${GREEN}✨ Your Social Media App is now live and ready to use!${NC}"
-    
+
 else
     echo -e "${RED}❌ Deployment failed!${NC}"
     echo ""
@@ -467,8 +467,8 @@ Local: http://localhost:5000
 Database:
 Host: localhost:5432
 Database: social_media
-Username: postgres
-Password: $USER_PASSWORD
+Username: $DB_USER
+Password: $DB_PASSWORD
 
 Management:
 - Application directory: $APP_DIR
