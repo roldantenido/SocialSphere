@@ -132,7 +132,7 @@ EOF
 
 # Create docker-compose.yml
 echo -e "${CYAN}🐋 Creating Docker Compose configuration...${NC}"
-cat > docker-compose.yml << 'EOF'
+cat > docker-compose.yml << EOF
 version: '3.8'
 
 services:
@@ -142,9 +142,9 @@ services:
     container_name: social_media_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-social_media}
-      POSTGRES_USER: ${POSTGRES_USER:-$DB_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-$DB_PASSWORD}
+      POSTGRES_DB: \${POSTGRES_DB:-social_media}
+      POSTGRES_USER: \${POSTGRES_USER:-$DB_USER}
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-$DB_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -152,7 +152,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U \${POSTGRES_USER:-$DB_USER} -d \${POSTGRES_DB:-social_media}"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -165,7 +165,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: \${DATABASE_URL}
     ports:
       - "5000:5000"
     depends_on:
