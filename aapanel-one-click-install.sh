@@ -47,27 +47,13 @@ echo -e "${CYAN}🔍 Checking system requirements...${NC}"
 # Skip aapanel installation check - assuming aapanel is already installed
 echo -e "${GREEN}✅ Assuming aapanel is already installed${NC}"
 
-# Get user input for configuration
-echo ""
-echo -e "${CYAN}🔧 Configuration Setup${NC}"
-read -p "Enter your domain name (optional, press Enter to skip): " DOMAIN
-
-echo -e "${GREEN}Generating random database credentials...${NC}"
-
 # Generate random database credentials
+echo ""
+echo -e "${CYAN}🔧 Generating secure database credentials...${NC}"
 DB_USER=$(generate_password)
 DB_PASSWORD=$(generate_password)
 echo -e "${YELLOW}Generated database username: $DB_USER${NC}"
 echo -e "${YELLOW}Generated database password: $DB_PASSWORD${NC}"
-
-# SSL choice
-SSL_ENABLED=false
-if [ ! -z "$DOMAIN" ]; then
-    read -p "Enable SSL with Let's Encrypt? (y/n): " ssl_choice
-    if [ "$ssl_choice" = "y" ] || [ "$ssl_choice" = "Y" ]; then
-        SSL_ENABLED=true
-    fi
-fi
 
 echo ""
 echo -e "${CYAN}🐳 Installing Docker and Docker Compose...${NC}"
@@ -244,63 +230,7 @@ $SUDO chown -R $USER:$USER $APP_DIR
 $SUDO chmod +x $APP_DIR
 
 echo ""
-echo -e "${CYAN}🌐 Configuring aapanel website...${NC}"
-
-# Create website in aapanel if domain provided
-if [ ! -z "$DOMAIN" ]; then
-    # Create nginx configuration
-    NGINX_CONFIG="/www/server/panel/vhost/nginx/${DOMAIN}.conf"
-    $SUDO mkdir -p "$(dirname "$NGINX_CONFIG")"
-
-    $SUDO tee "$NGINX_CONFIG" > /dev/null << EOF
-server {
-    listen 80;
-    server_name $DOMAIN www.$DOMAIN;
-
-    # Security headers
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-XSS-Protection "1; mode=block";
-
-    # Client max body size for file uploads
-    client_max_body_size 50M;
-
-    # Proxy settings
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
-    proxy_read_timeout 60s;
-    proxy_connect_timeout 30s;
-
-    location / {
-        proxy_pass http://127.0.0.1:50725;
-    }
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:50725;
-    }
-
-    # WebSocket support for real-time features
-    location /socket.io/ {
-        proxy_pass http://127.0.0.1:50725;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-EOF
-
-    echo -e "${GREEN}✅ Nginx configuration created for $DOMAIN${NC}"
-
-    # Test and reload nginx
-    if $SUDO nginx -t 2>/dev/null; then
-        $SUDO nginx -s reload
-        echo -e "${GREEN}✅ Nginx reloaded successfully${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Nginx configuration needs manual review${NC}"
-    fi
-fi
+echo -e "${CYAN}🌐 Application will be accessible directly via port 50725${NC}"
 
 echo ""
 echo -e "${CYAN}🚀 Deploying the application...${NC}"
@@ -362,16 +292,6 @@ if docker-compose ps | grep -q "Up"; then
     docker-compose ps
     echo ""
     echo -e "${GREEN}🌐 Access Your Application:${NC}"
-
-    if [ ! -z "$DOMAIN" ]; then
-        if [ "$SSL_ENABLED" = true ]; then
-            echo -e "  🔒 HTTPS: ${CYAN}https://$DOMAIN${NC}"
-            echo -e "  🔒 HTTPS: ${CYAN}https://www.$DOMAIN${NC}"
-        else
-            echo -e "  🌍 HTTP:  ${CYAN}http://$DOMAIN${NC}"
-            echo -e "  🌍 HTTP:  ${CYAN}http://www.$DOMAIN${NC}"
-        fi
-    fi
     echo -e "  📡 Direct: ${CYAN}http://$SERVER_IP:50725${NC}"
     echo -e "  🏠 Local:  ${CYAN}http://localhost:50725${NC}"
     echo ""
@@ -388,19 +308,11 @@ if docker-compose ps | grep -q "Up"; then
     echo -e "  📊 Status:       ${CYAN}docker-compose ps${NC}"
     echo ""
     echo -e "${GREEN}🎛️  aapanel Integration:${NC}"
-    echo -e "  • Manage SSL certificates in Website settings"
     echo -e "  • Monitor containers in Docker section"
     echo -e "  • View logs in Logs section"
     echo -e "  • File management in File Manager"
+    echo -e "  • Configure domain and SSL in Website settings (optional)"
     echo ""
-
-    if [ "$SSL_ENABLED" = true ] && [ ! -z "$DOMAIN" ]; then
-        echo -e "${YELLOW}🔒 SSL Setup Reminder:${NC}"
-        echo "  1. Go to aapanel → Website → $DOMAIN → SSL"
-        echo "  2. Use Let's Encrypt to get free SSL certificate"
-        echo "  3. Enable 'Force HTTPS redirect'"
-        echo ""
-    fi
 
     echo -e "${GREEN}✨ Your Social Media App is now live and ready to use!${NC}"
 
@@ -455,7 +367,6 @@ Social Media App Installation Info
 Generated: $(date)
 
 Access URLs:
-$([ ! -z "$DOMAIN" ] && echo "Domain: http://$DOMAIN")
 Direct: http://$SERVER_IP:50725
 Local: http://localhost:50725
 
@@ -476,6 +387,8 @@ Commands:
 - Restart: docker-compose restart
 - Stop: docker-compose down
 - Update: docker-compose pull && docker-compose up -d
+
+Note: You can configure a domain and SSL through aapanel's Website section if needed.
 EOF
 
 echo -e "${GREEN}📝 Installation info saved to: installation-info.txt${NC}"
