@@ -31,6 +31,25 @@ export async function markSetupComplete(): Promise<void> {
 }
 
 export async function testDatabaseConnection(config: SetupConfig): Promise<boolean> {
+  // If we're in development with Replit PostgreSQL, test the existing connection
+  if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
+    const testPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
+    });
+
+    try {
+      const client = await testPool.connect();
+      client.release();
+      await testPool.end();
+      return true;
+    } catch (error) {
+      await testPool.end();
+      return false;
+    }
+  }
+
+  // For custom database configuration
   const testPool = new Pool({
     host: config.dbHost,
     port: config.dbPort,
@@ -52,6 +71,11 @@ export async function testDatabaseConnection(config: SetupConfig): Promise<boole
 }
 
 export async function createDatabaseAndUser(config: SetupConfig): Promise<void> {
+  // If we're in development with Replit PostgreSQL, skip database creation
+  if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
+    return; // Database already exists in Replit
+  }
+
   // Connect to postgres database to create user and database
   const adminPool = new Pool({
     host: config.dbHost,
@@ -84,14 +108,24 @@ export async function initializeDatabase(config: SetupConfig): Promise<void> {
   const { drizzle } = await import('drizzle-orm/node-postgres');
   const schema = await import('@shared/schema');
   
-  const pool = new Pool({
-    host: config.dbHost,
-    port: config.dbPort,
-    database: config.dbName,
-    user: config.dbUser,
-    password: config.dbPassword,
-    ssl: false
-  });
+  let pool: Pool;
+  
+  // Use Replit PostgreSQL if in development
+  if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
+    });
+  } else {
+    pool = new Pool({
+      host: config.dbHost,
+      port: config.dbPort,
+      database: config.dbName,
+      user: config.dbUser,
+      password: config.dbPassword,
+      ssl: false
+    });
+  }
 
   const db = drizzle(pool, { schema });
   
