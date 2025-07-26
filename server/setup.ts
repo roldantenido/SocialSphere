@@ -59,12 +59,24 @@ export function saveAppConfig(setupData: SetupData): void {
     isSetup: true,
   };
 
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  
-  // Update environment variables
-  process.env.DATABASE_URL = `postgresql://${setupData.dbUser}:${setupData.dbPassword}@${setupData.dbHost}:${setupData.dbPort}/${setupData.dbName}`;
-  
-  console.log('✅ App configuration saved');
+  try {
+    // Ensure the directory exists and is writable
+    const configDir = path.dirname(CONFIG_FILE);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+
+    // Write the config file
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), { mode: 0o644 });
+    
+    // Update environment variables
+    process.env.DATABASE_URL = `postgresql://${setupData.dbUser}:${setupData.dbPassword}@${setupData.dbHost}:${setupData.dbPort}/${setupData.dbName}`;
+    
+    console.log('✅ App configuration saved to:', CONFIG_FILE);
+  } catch (error) {
+    console.error('Error saving configuration:', error);
+    throw new Error(`Failed to save configuration: ${(error as Error).message}`);
+  }
 }
 
 export function getSetupStatus(): SetupStatus {

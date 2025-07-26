@@ -121,6 +121,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const setupData = setupSchema.parse(req.body);
       
+      console.log('Starting setup process...');
+      console.log('Working directory:', process.cwd());
+      
       // Save configuration
       saveAppConfig(setupData);
 
