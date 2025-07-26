@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import { Pool } from "pg";
 import { storage } from "./storage";
 import { 
   insertUserSchema, 
@@ -68,30 +69,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { dbHost, dbPort, dbName, dbUser, dbPassword } = req.body;
       
-      // Import Pool here to avoid circular dependency issues
-      const { Pool } = require('pg');
+      // Validate required fields
+      if (!dbHost || !dbPort || !dbName || !dbUser || !dbPassword) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "All database fields are required" 
+        });
+      }
       
       // Create a test pool with the provided credentials
       const testPool = new Pool({
         host: dbHost,
-        port: dbPort,
+        port: parseInt(dbPort),
         database: dbName,
         user: dbUser,
         password: dbPassword,
         ssl: false,
         connectionTimeoutMillis: 5000,
+        max: 1, // Only one connection for testing
       });
 
       try {
         // Test the connection
         const client = await testPool.connect();
-        await client.query('SELECT 1');
+        await client.query('SELECT 1 as test');
         client.release();
         await testPool.end();
         
         res.json({ success: true, message: "Database connection successful" });
       } catch (dbError: any) {
-        await testPool.end();
+        await testPool.end().catch(() => {}); // Ignore errors when ending pool
         res.status(400).json({ 
           success: false, 
           error: "Database connection failed: " + dbError.message 
