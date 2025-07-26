@@ -110,8 +110,23 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   constructor() {
-    // Initialize with some sample users
-    this.initializeSampleData();
+    // Initialize with some sample users only if setup is complete
+    this.initializeSampleDataIfReady();
+  }
+
+  private async initializeSampleDataIfReady() {
+    try {
+      // Only initialize if setup is complete
+      const { isSetupComplete } = await import('./setup');
+      if (!(await isSetupComplete())) {
+        console.log('⚠️ Setup not complete, skipping sample data initialization');
+        return;
+      }
+
+      await this.initializeSampleData();
+    } catch (error) {
+      console.log('⚠️ Database not ready, will initialize sample data after setup');
+    }
   }
 
   private async initializeSampleData() {
