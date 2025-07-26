@@ -14,7 +14,7 @@ export async function initializeDatabase() {
     if (!pool) {
       pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: false
+        ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
       });
       db = drizzle(pool, { schema });
     }
@@ -43,7 +43,7 @@ export async function getDatabase() {
     if (!pool) {
       pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: false
+        ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : false
       });
       db = drizzle(pool, { schema });
     }

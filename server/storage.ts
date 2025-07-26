@@ -118,7 +118,11 @@ export class DatabaseStorage implements IStorage {
 
   private async getDB(): Promise<any> {
     if (!this.dbPromise) {
-      this.dbPromise = Promise.resolve(db); // Assuming 'db' is already your initialized drizzle-orm client
+      this.dbPromise = (async () => {
+        const { db: dbInstance } = await import('./db');
+        const { db: initializedDb } = await dbInstance?.initializeDatabase?.() || await import('./db').then(m => m.getDatabase());
+        return initializedDb;
+      })();
     }
     return this.dbPromise;
   }
