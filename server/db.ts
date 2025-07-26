@@ -13,62 +13,25 @@ const dbConfig = {
   ssl: false
 };
 
-// Function to ensure database and user exist
-async function ensureDatabaseExists() {
-  // First connect to postgres database to create user and database
-  const postgresPool = new Pool({
-    ...dbConfig,
-    database: 'postgres', // Connect to default postgres database
-    user: 'postgres',
-    password: 'postgres' // Assuming default postgres password
-  });
-
+// Function to test database connection
+async function testDatabaseConnection() {
   try {
-    const client = await postgresPool.connect();
-    
-    // Create user if not exists
-    try {
-      await client.query(`CREATE USER ${dbConfig.user} WITH PASSWORD '${dbConfig.password}';`);
-      console.log('✅ Database user created');
-    } catch (error: any) {
-      if (error.code === '42710') { // User already exists
-        console.log('ℹ️ Database user already exists');
-      } else {
-        console.error('Error creating user:', error.message);
-      }
-    }
-
-    // Create database if not exists
-    try {
-      await client.query(`CREATE DATABASE ${dbConfig.database} OWNER ${dbConfig.user};`);
-      console.log('✅ Database created');
-    } catch (error: any) {
-      if (error.code === '42P04') { // Database already exists
-        console.log('ℹ️ Database already exists');
-      } else {
-        console.error('Error creating database:', error.message);
-      }
-    }
-
-    // Grant privileges
-    try {
-      await client.query(`GRANT ALL PRIVILEGES ON DATABASE ${dbConfig.database} TO ${dbConfig.user};`);
-      console.log('✅ Database privileges granted');
-    } catch (error: any) {
-      console.log('ℹ️ Privileges already granted or error:', error.message);
-    }
-
+    const client = await pool.connect();
+    await client.query('SELECT 1');
     client.release();
+    console.log('✅ Database connection test successful');
+    return true;
   } catch (error) {
-    console.error('Error ensuring database exists:', error);
-  } finally {
-    await postgresPool.end();
+    console.log('ℹ️ Database connection test failed, this is normal during setup:', (error as Error).message);
+    return false;
   }
 }
 
-// Initialize database setup only if configured
+// Test database connection only if configured
 if (process.env.DATABASE_URL) {
-  ensureDatabaseExists().catch(console.error);
+  testDatabaseConnection().catch(() => {
+    // Connection failed, which is expected during initial setup
+  });
 }
 
 // Create pool based on configuration

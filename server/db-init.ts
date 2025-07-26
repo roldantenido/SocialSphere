@@ -57,26 +57,50 @@ export async function setupDatabaseWithConfig(config: {
   user: string;
   password: string;
 }): Promise<void> {
-  const migrator = new DatabaseMigrator(config);
-  
   try {
-    // Ensure database exists
-    await migrator.ensureDatabaseExists(config);
-    
-    // Set environment variable
+    // Set environment variable first
     const databaseUrl = `postgresql://${config.user}:${config.password}@${config.host}:${config.port}/${config.database}`;
     process.env.DATABASE_URL = databaseUrl;
     
-    // Run migrations
-    await migrator.safeSchemaUpdate();
+    // Test direct connection to the configured database
+    const { Pool } = await import('pg');
+    const testPool = new Pool({
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      user: config.user,
+      password: config.password,
+      ssl: false,
+      connectionTimeoutMillis: 10000,
+    });
+
+    try {
+      const client = await testPool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      console.log('✅ Database connection successful');
+    } catch (connectionError: any) {
+      throw new Error(`Database connection failed: ${connectionError.message}`);
+    } finally {
+      await testPool.end();
+    }
     
-    // Initialize sample data
-    const storage = new DatabaseStorage();
-    await storage.initializeSampleData();
+    // If connection works, run migrations
+    const migrator = new DatabaseMigrator(config);
+    try {
+      await migrator.safeSchemaUpdate();
+      
+      // Initialize sample data
+      const storage = new DatabaseStorage();
+      await storage.initializeSampleData();
+      
+      console.log('✅ Database setup completed successfully');
+    } finally {
+      await migrator.close();
+    }
     
-    console.log('✅ Database setup completed successfully');
-    
-  } finally {
-    await migrator.close();
+  } catch (error) {
+    console.error('Database setup failed:', error);
+    throw error;
   }
 }
