@@ -9,14 +9,6 @@ import {
   insertFriendshipSchema 
 } from "@shared/schema";
 import { z } from "zod";
-import { 
-  isSetupComplete, 
-  testDatabaseConnection, 
-  createDatabaseAndUser, 
-  initializeDatabase,
-  markSetupComplete,
-  type SetupConfig 
-} from "./setup";
 
 // Extend Express Request interface to include userId
 declare global {
@@ -43,23 +35,6 @@ function validateSession(sessionId: string): number | null {
   return session.userId;
 }
 
-async function checkSetup(req: Request, res: Response, next: NextFunction) {
-  // Skip setup check for setup routes
-  if (req.path.startsWith('/api/setup')) {
-    return next();
-  }
-  
-  const setupComplete = await isSetupComplete();
-  if (!setupComplete) {
-    return res.status(503).json({ 
-      message: "Setup required", 
-      redirectTo: "/setup" 
-    });
-  }
-  
-  next();
-}
-
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   const sessionId = req.headers.authorization?.replace('Bearer ', '');
   const userId = sessionId ? validateSession(sessionId) : null;
@@ -81,51 +56,6 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup routes (no setup check required)
-  app.get("/api/setup/status", async (req, res) => {
-    const setupComplete = await isSetupComplete();
-    res.json({ setupComplete });
-  });
-
-  app.post("/api/setup/test-connection", async (req, res) => {
-    try {
-      const config = req.body as Partial<SetupConfig>;
-      const isValid = await testDatabaseConnection(config as SetupConfig);
-      res.json({ success: isValid, message: isValid ? "Connection successful" : "Connection failed" });
-    } catch (error) {
-      res.json({ success: false, message: "Connection test failed" });
-    }
-  });
-
-  app.post("/api/setup/complete", async (req, res) => {
-    try {
-      if (await isSetupComplete()) {
-        return res.status(400).json({ success: false, message: "Setup already completed" });
-      }
-
-      const config = req.body as SetupConfig;
-      
-      // Test connection first
-      const connectionValid = await testDatabaseConnection(config);
-      if (!connectionValid) {
-        return res.json({ success: false, message: "Database connection failed" });
-      }
-
-      // Create database and initialize
-      await createDatabaseAndUser(config);
-      await initializeDatabase(config);
-      await markSetupComplete();
-
-      res.json({ success: true, message: "Setup completed successfully" });
-    } catch (error) {
-      console.error('Setup error:', error);
-      res.json({ success: false, message: "Setup failed" });
-    }
-  });
-
-  // Apply setup check to all other routes
-  app.use(checkSetup);
-
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {

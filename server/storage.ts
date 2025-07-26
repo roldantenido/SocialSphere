@@ -109,53 +109,13 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private dbPromise: Promise<any> | null = null;
-
   constructor() {
-    // Initialize with some sample users only if setup is complete
-    this.initializeSampleDataIfReady();
-  }
-
-  private async getDB(): Promise<any> {
-    if (!this.dbPromise) {
-      this.dbPromise = (async () => {
-        const { db: dbInstance } = await import('./db');
-        const { db: initializedDb } = await dbInstance?.initializeDatabase?.() || await import('./db').then(m => m.getDatabase());
-        return initializedDb;
-      })();
-    }
-    return this.dbPromise;
-  }
-
-
-  private async initializeSampleDataIfReady() {
-    try {
-      // In development mode with DATABASE_URL, initialize sample data
-      if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
-        console.log('🟢 Development database detected, initializing sample data');
-        const db = await this.getDB();
-        if (db) {
-          await this.initializeSampleData();
-        }
-        return;
-      }
-
-      // For production, only initialize if setup is complete
-      const { isSetupComplete } = await import('./setup');
-      if (!(await isSetupComplete())) {
-        console.log('⚠️ Setup not complete, skipping sample data initialization');
-        return;
-      }
-
-      await this.initializeSampleData();
-    } catch (error) {
-      console.log('⚠️ Database not ready, will initialize sample data after setup');
-    }
+    // Initialize with some sample users
+    this.initializeSampleData();
   }
 
   private async initializeSampleData() {
     try {
-      const db = await this.getDB();
       // Check if users already exist
       const existingUsers = await db.select().from(users).limit(1);
       if (existingUsers.length > 0) {
@@ -372,25 +332,21 @@ export class DatabaseStorage implements IStorage {
 
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    const db = await this.getDB();
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const db = await this.getDB();
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const db = await this.getDB();
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const db = await this.getDB();
     const [user] = await db
       .insert(users)
       .values({
@@ -407,7 +363,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const db = await this.getDB();
     const [user] = await db
       .update(users)
       .set(updates)
@@ -420,7 +375,6 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(id);
     if (!user) return undefined;
 
-    const db = await this.getDB();
     const friendsCountResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(friendships)
@@ -437,7 +391,6 @@ export class DatabaseStorage implements IStorage {
 
   // Posts
   async createPost(insertPost: InsertPost): Promise<Post> {
-    const db = await this.getDB();
     const [post] = await db
       .insert(posts)
       .values({
@@ -454,7 +407,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPosts(): Promise<PostWithUser[]> {
-    const db = await this.getDB();
     const postsWithUsers = await db
       .select({
         id: posts.id,
@@ -486,7 +438,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostsByUser(userId: number): Promise<PostWithUser[]> {
-    const db = await this.getDB();
     const postsWithUsers = await db
       .select({
         id: posts.id,
@@ -519,20 +470,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPost(id: number): Promise<Post | undefined> {
-    const db = await this.getDB();
     const [post] = await db.select().from(posts).where(eq(posts.id, id));
     return post || undefined;
   }
 
   async deletePost(id: number): Promise<boolean> {
-    const db = await this.getDB();
     const result = await db.delete(posts).where(eq(posts.id, id));
     return (result.rowCount || 0) > 0;
   }
 
   // Friendships
   async createFriendship(insertFriendship: InsertFriendship): Promise<Friendship> {
-    const db = await this.getDB();
     const [friendship] = await db
       .insert(friendships)
       .values(insertFriendship)
@@ -541,7 +489,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriendship(userId: number, friendId: number): Promise<Friendship | undefined> {
-    const db = await this.getDB();
     const [friendship] = await db
       .select()
       .from(friendships)
@@ -555,7 +502,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateFriendshipStatus(userId: number, friendId: number, status: 'accepted' | 'declined'): Promise<void> {
-    const db = await this.getDB();
     await db
       .update(friendships)
       .set({ status })
@@ -568,7 +514,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserFriends(userId: number): Promise<User[]> {
-    const db = await this.getDB();
     const friendIds = await db
       .select({
         friendId: sql<number>`CASE 
@@ -595,7 +540,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriendRequests(userId: number): Promise<User[]> {
-    const db = await this.getDB();
     const requestUserIds = await db
       .select({ userId: friendships.userId })
       .from(friendships)
@@ -618,7 +562,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriendSuggestions(userId: number): Promise<User[]> {
-    const db = await this.getDB();
     // Get users that are not already friends or have pending requests
     const existingConnections = await db
       .select({
@@ -646,7 +589,6 @@ export class DatabaseStorage implements IStorage {
 
   // Likes
   async createLike(insertLike: InsertLike): Promise<Like> {
-    const db = await this.getDB();
     const [like] = await db
       .insert(likes)
       .values(insertLike)
@@ -662,7 +604,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLike(userId: number, postId: number): Promise<void> {
-    const db = await this.getDB();
     await db
       .delete(likes)
       .where(
@@ -680,7 +621,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async isPostLiked(userId: number, postId: number): Promise<boolean> {
-    const db = await this.getDB();
     const [like] = await db
       .select()
       .from(likes)
@@ -695,7 +635,6 @@ export class DatabaseStorage implements IStorage {
 
   // Comments
   async createComment(insertComment: InsertComment): Promise<Comment> {
-    const db = await this.getDB();
     const [comment] = await db
       .insert(comments)
       .values(insertComment)
@@ -711,7 +650,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostComments(postId: number): Promise<CommentWithUser[]> {
-    const db = await this.getDB();
     const commentsWithUsers = await db
       .select({
         id: comments.id,
@@ -740,7 +678,6 @@ export class DatabaseStorage implements IStorage {
 
   // Chat Messages
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const db = await this.getDB();
     const [message] = await db
       .insert(chatMessages)
       .values(insertMessage)
@@ -749,7 +686,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatMessages(userId1: number, userId2: number): Promise<ChatMessage[]> {
-    const db = await this.getDB();
     const messages = await db
       .select()
       .from(chatMessages)
@@ -772,12 +708,10 @@ export class DatabaseStorage implements IStorage {
 
   // Admin methods
   async getAllUsers(): Promise<User[]> {
-    const db = await this.getDB();
     return await db.select().from(users).orderBy(users.createdAt);
   }
 
   async deleteUser(id: number): Promise<boolean> {
-    const db = await this.getDB();
     const result = await db.delete(users).where(eq(users.id, id));
     return (result.rowCount || 0) > 0;
   }
@@ -792,12 +726,11 @@ export class DatabaseStorage implements IStorage {
 
   // Groups
   async createGroup(insertGroup: InsertGroup): Promise<Group> {
-    const db = await this.getDB();
     const [group] = await db
       .insert(groups)
       .values(insertGroup)
       .returning();
-
+    
     // Add creator as admin member
     await db
       .insert(groupMembers)
@@ -806,18 +739,17 @@ export class DatabaseStorage implements IStorage {
         userId: group.createdBy,
         role: 'admin'
       });
-
+    
     // Update members count
     await db
       .update(groups)
       .set({ membersCount: 1 })
       .where(eq(groups.id, group.id));
-
+    
     return group;
   }
 
   async getGroup(id: number): Promise<Group | undefined> {
-    const db = await this.getDB();
     const [group] = await db
       .select()
       .from(groups)
@@ -827,7 +759,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserGroups(userId: number): Promise<GroupWithCreator[]> {
-    const db = await this.getDB();
     const userGroups = await db
       .select({
         id: groups.id,
@@ -855,7 +786,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllGroups(): Promise<GroupWithCreator[]> {
-    const db = await this.getDB();
     const allGroups = await db
       .select({
         id: groups.id,
@@ -875,14 +805,14 @@ export class DatabaseStorage implements IStorage {
         }
       })
       .from(groups)
-      .innerJoin(users, eq(groups.createdBy, users.id))      .where(eq(groups.isPrivate, false))
+      .innerJoin(users, eq(groups.createdBy, users.id))
+      .where(eq(groups.isPrivate, false))
       .orderBy(desc(groups.membersCount));
 
     return allGroups;
   }
 
   async joinGroup(userId: number, groupId: number): Promise<GroupMember> {
-    const db = await this.getDB();
     const [member] = await db
       .insert(groupMembers)
       .values({
@@ -891,18 +821,17 @@ export class DatabaseStorage implements IStorage {
         role: 'member'
       })
       .returning();
-
+    
     // Update members count
     await db
       .update(groups)
       .set({ membersCount: sql`${groups.membersCount} + 1` })
       .where(eq(groups.id, groupId));
-
+    
     return member;
   }
 
   async leaveGroup(userId: number, groupId: number): Promise<void> {
-    const db = await this.getDB();
     await db
       .delete(groupMembers)
       .where(
@@ -911,7 +840,7 @@ export class DatabaseStorage implements IStorage {
           eq(groupMembers.groupId, groupId)
         )
       );
-
+    
     // Update members count
     await db
       .update(groups)
@@ -921,7 +850,6 @@ export class DatabaseStorage implements IStorage {
 
   // Pages
   async createPage(insertPage: InsertPage): Promise<Page> {
-    const db = await this.getDB();
     const [page] = await db
       .insert(pages)
       .values(insertPage)
@@ -930,7 +858,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPage(id: number): Promise<Page | undefined> {
-    const db = await this.getDB();
     const [page] = await db
       .select()
       .from(pages)
@@ -940,7 +867,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllPages(): Promise<PageWithCreator[]> {
-    const db = await this.getDB();
     const allPages = await db
       .select({
         id: pages.id,
@@ -969,7 +895,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async followPage(userId: number, pageId: number): Promise<PageFollower> {
-    const db = await this.getDB();
     const [follower] = await db
       .insert(pageFollowers)
       .values({
@@ -977,18 +902,17 @@ export class DatabaseStorage implements IStorage {
         pageId
       })
       .returning();
-
+    
     // Update followers count
     await db
       .update(pages)
       .set({ followersCount: sql`${pages.followersCount} + 1` })
       .where(eq(pages.id, pageId));
-
+    
     return follower;
   }
 
   async unfollowPage(userId: number, pageId: number): Promise<void> {
-    const db = await this.getDB();
     await db
       .delete(pageFollowers)
       .where(
@@ -997,7 +921,7 @@ export class DatabaseStorage implements IStorage {
           eq(pageFollowers.pageId, pageId)
         )
       );
-
+    
     // Update followers count
     await db
       .update(pages)
@@ -1007,7 +931,6 @@ export class DatabaseStorage implements IStorage {
 
   // Games
   async createGame(insertGame: InsertGame): Promise<Game> {
-    const db = await this.getDB();
     const [game] = await db
       .insert(games)
       .values(insertGame)
@@ -1016,7 +939,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGame(id: number): Promise<Game | undefined> {
-    const db = await this.getDB();
     const [game] = await db
       .select()
       .from(games)
@@ -1026,7 +948,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllGames(): Promise<Game[]> {
-    const db = await this.getDB();
     return await db
       .select()
       .from(games)
@@ -1035,9 +956,8 @@ export class DatabaseStorage implements IStorage {
 
   // Search
   async searchAll(query: string, limit = 10): Promise<SearchResults> {
-    const db = await this.getDB();
     const searchTerm = `%${query.toLowerCase()}%`;
-
+    
     // Search users
     const searchUsers = await db
       .select({
