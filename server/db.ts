@@ -8,9 +8,9 @@ let pool: Pool | null = null;
 let db: any = null;
 
 export async function initializeDatabase() {
-  // Check if we're in Replit and have DATABASE_URL
-  if (process.env.REPLIT_CLUSTER && process.env.DATABASE_URL) {
-    console.log('🟢 Using Replit PostgreSQL database');
+  // Check if we're in development mode (Option 1)
+  if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
+    console.log('🟢 Using development database (Replit PostgreSQL)');
     if (!pool) {
       pool = new Pool({
         connectionString: process.env.DATABASE_URL,
@@ -21,7 +21,7 @@ export async function initializeDatabase() {
     return { pool, db };
   }
 
-  // Otherwise, check if setup is complete for custom database
+  // For production deployment, check if setup is complete (Option 2)
   if (!(await isSetupComplete())) {
     return { pool: null, db: null };
   }
@@ -38,8 +38,8 @@ export async function initializeDatabase() {
 }
 
 export async function getDatabase() {
-  // Check if we're in Replit and have DATABASE_URL
-  if (process.env.REPLIT_CLUSTER && process.env.DATABASE_URL) {
+  // Check if we're in development mode (Option 1)
+  if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
     if (!pool) {
       pool = new Pool({
         connectionString: process.env.DATABASE_URL,
@@ -50,7 +50,7 @@ export async function getDatabase() {
     return { pool, db };
   }
 
-  // Otherwise, check if setup is complete
+  // For production deployment, check if setup is complete (Option 2)
   if (!(await isSetupComplete())) {
     throw new Error('Setup not completed');
   }
