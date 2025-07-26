@@ -14,6 +14,7 @@ import { Settings, Database, User, Globe } from "lucide-react";
 export default function Setup() {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [testingConnection, setTestingConnection] = useState(false);
 
   const form = useForm<SetupData>({
     resolver: zodResolver(setupSchema),
@@ -29,6 +30,43 @@ export default function Setup() {
     },
   });
 
+  const testDbMutation = useMutation({
+    mutationFn: async (dbData: {
+      dbHost: string;
+      dbPort: number;
+      dbName: string;
+      dbUser: string;
+      dbPassword: string;
+    }) => {
+      const response = await fetch("/api/setup/test-db", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dbData),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Database connection failed");
+      }
+      return result;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Connection Successful!",
+        description: "Database connection test passed. You can proceed to the next step.",
+      });
+      setStep(3);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Connection Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const setupMutation = useMutation({
     mutationFn: async (data: SetupData) => {
       const response = await fetch("/api/setup", {
@@ -39,7 +77,8 @@ export default function Setup() {
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error("Setup failed");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Setup failed");
       }
       return response.json();
     },
@@ -65,15 +104,32 @@ export default function Setup() {
     setupMutation.mutate(data);
   };
 
+  const testDatabaseConnection = async () => {
+    const isValid = await form.trigger(["dbHost", "dbPort", "dbName", "dbUser", "dbPassword"]);
+    if (!isValid) return;
+
+    const formData = form.getValues();
+    setTestingConnection(true);
+    
+    testDbMutation.mutate({
+      dbHost: formData.dbHost,
+      dbPort: formData.dbPort,
+      dbName: formData.dbName,
+      dbUser: formData.dbUser,
+      dbPassword: formData.dbPassword,
+    });
+    
+    setTestingConnection(false);
+  };
+
   const nextStep = async () => {
     if (step === 1) {
       // Validate site info before proceeding
       const isValid = await form.trigger(["siteName"]);
       if (isValid) setStep(2);
     } else if (step === 2) {
-      // Validate database info before proceeding
-      const isValid = await form.trigger(["dbHost", "dbPort", "dbName", "dbUser", "dbPassword"]);
-      if (isValid) setStep(3);
+      // Test database connection before proceeding
+      await testDatabaseConnection();
     }
   };
 
@@ -252,6 +308,18 @@ export default function Setup() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={testDatabaseConnection}
+                      disabled={testDbMutation.isPending || testingConnection}
+                      className="w-full"
+                    >
+                      {testDbMutation.isPending || testingConnection ? "Testing Connection..." : "Test Database Connection"}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -264,7 +332,7 @@ export default function Setup() {
                 
                 {step < 3 ? (
                   <Button type="button" onClick={nextStep} className="ml-auto">
-                    Next
+                    {step === 2 ? "Test & Continue" : "Next"}
                   </Button>
                 ) : (
                   <Button

@@ -63,6 +63,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(getSetupStatus());
   });
 
+  // Test database connection endpoint
+  app.post("/api/setup/test-db", async (req, res) => {
+    try {
+      const { dbHost, dbPort, dbName, dbUser, dbPassword } = req.body;
+      
+      // Import Pool here to avoid circular dependency issues
+      const { Pool } = require('pg');
+      
+      // Create a test pool with the provided credentials
+      const testPool = new Pool({
+        host: dbHost,
+        port: dbPort,
+        database: dbName,
+        user: dbUser,
+        password: dbPassword,
+        ssl: false,
+        connectionTimeoutMillis: 5000,
+      });
+
+      try {
+        // Test the connection
+        const client = await testPool.connect();
+        await client.query('SELECT 1');
+        client.release();
+        await testPool.end();
+        
+        res.json({ success: true, message: "Database connection successful" });
+      } catch (dbError: any) {
+        await testPool.end();
+        res.status(400).json({ 
+          success: false, 
+          error: "Database connection failed: " + dbError.message 
+        });
+      }
+    } catch (error) {
+      res.status(400).json({ 
+        success: false, 
+        error: "Invalid database configuration: " + (error as Error).message 
+      });
+    }
+  });
+
   // Setup endpoint
   app.post("/api/setup", async (req, res) => {
     try {
