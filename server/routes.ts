@@ -12,6 +12,7 @@ import {
 import { z } from "zod";
 import { isAppConfigured, getSetupStatus, saveAppConfig } from "./setup";
 import { setupSchema, type SetupData } from "@shared/setup";
+import { setupDatabaseWithConfig } from "./db-init";
 
 // Extend Express Request interface to include userId
 declare global {
@@ -122,8 +123,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const setupData = setupSchema.parse(req.body);
       
       console.log('Starting setup process...');
-      console.log('Working directory:', process.cwd());
       
+      // Setup database with provided configuration
+      await setupDatabaseWithConfig({
+        host: setupData.dbHost,
+        port: setupData.dbPort,
+        database: setupData.dbName,
+        user: setupData.dbUser,
+        password: setupData.dbPassword,
+      });
+
       // Save configuration
       saveAppConfig(setupData);
 
@@ -443,9 +452,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Execute command (in a real deployment, you'd use child_process)
       // For now, we'll simulate the response
-      const { exec } = require('child_process');
+      const { exec } = await import('child_process');
       
-      exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+      exec(command, { timeout: 300000 }, (error: any, stdout: any, stderr: any) => {
         if (error) {
           return res.json({ 
             success: false, 

@@ -114,7 +114,7 @@ export class DatabaseStorage implements IStorage {
     this.initializeSampleData();
   }
 
-  private async initializeSampleData() {
+  async initializeSampleData() {
     try {
       // Skip if not configured
       if (!process.env.DATABASE_URL) {
