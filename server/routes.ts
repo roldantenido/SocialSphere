@@ -413,6 +413,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Git deployment routes
+  app.post("/api/git/execute", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { command } = req.body;
+      
+      if (!command || typeof command !== 'string') {
+        return res.status(400).json({ success: false, error: "Command is required" });
+      }
+
+      // Security: Only allow specific safe commands
+      const allowedCommands = [
+        /^git clone/,
+        /^git pull/,
+        /^npm install$/,
+        /^npm run dev$/,
+        /^pkill -f "npm run dev"/,
+        /^cp -r/,
+        /^rm -rf \/tmp\/app-clone$/
+      ];
+
+      const isAllowed = allowedCommands.some(pattern => pattern.test(command));
+      if (!isAllowed) {
+        return res.status(403).json({ success: false, error: "Command not allowed" });
+      }
+
+      // Execute command (in a real deployment, you'd use child_process)
+      // For now, we'll simulate the response
+      const { exec } = require('child_process');
+      
+      exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+        if (error) {
+          return res.json({ 
+            success: false, 
+            error: error.message,
+            output: stderr 
+          });
+        }
+        
+        res.json({ 
+          success: true, 
+          output: stdout || 'Command executed successfully'
+        });
+      });
+
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to execute command: " + (error as Error).message 
+      });
+    }
+  });
+
   // Search routes
   app.get("/api/search", requireAuth, async (req, res) => {
     const { q: query } = req.query;

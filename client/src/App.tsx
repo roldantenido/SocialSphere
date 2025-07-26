@@ -15,7 +15,8 @@ import Groups from "@/pages/groups";
 import Marketplace from "@/pages/marketplace";
 import Gaming from "@/pages/gaming";
 import Profile from "@/pages/profile";
-import Admin from "@/pages/admin";
+import Admin from "./pages/admin";
+import GitDeploy from "./pages/git-deploy";
 import DockerWizard from "@/pages/docker-wizard";
 import Discover from "@/pages/discover";
 import Setup from "@/pages/setup";
@@ -78,6 +79,7 @@ function AuthenticatedApp() {
       <Route path="/gaming" component={Gaming} />
       <Route path="/profile/:userId?" component={Profile} />
       <Route path="/admin" component={Admin} />
+      <Route path="/git-deploy" component={GitDeploy} />
       <Route path="/docker-wizard" component={DockerWizard} />
       <Route component={NotFound} />
     </Switch>
