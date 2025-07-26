@@ -49,6 +49,11 @@ async function checkSetup(req: Request, res: Response, next: NextFunction) {
     return next();
   }
   
+  // If we're in Replit and have DATABASE_URL, skip setup requirement
+  if (process.env.REPLIT_CLUSTER && process.env.DATABASE_URL) {
+    return next();
+  }
+  
   const setupComplete = await isSetupComplete();
   if (!setupComplete) {
     return res.status(503).json({ 

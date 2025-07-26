@@ -116,7 +116,14 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeSampleDataIfReady() {
     try {
-      // Only initialize if setup is complete
+      // Check if we're in Replit with DATABASE_URL (Option 1)
+      if (process.env.REPLIT_CLUSTER && process.env.DATABASE_URL) {
+        console.log('🟢 Replit database detected, initializing sample data');
+        await this.initializeSampleData();
+        return;
+      }
+
+      // Otherwise, only initialize if setup is complete (Option 2)
       const { isSetupComplete } = await import('./setup');
       if (!(await isSetupComplete())) {
         console.log('⚠️ Setup not complete, skipping sample data initialization');
