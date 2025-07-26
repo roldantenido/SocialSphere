@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Home from "@/pages/home";
+import Discover from "@/pages/discover";
 import Friends from "@/pages/friends";
 import Groups from "@/pages/groups";
 import Marketplace from "@/pages/marketplace";
@@ -66,6 +67,7 @@ function AuthenticatedApp() {
 
 function App() {
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     const checkSetupStatus = async () => {
@@ -73,38 +75,27 @@ function App() {
         const response = await fetch('/api/setup/status');
         const data = await response.json();
         setSetupComplete(data.setupComplete);
+        
+        // Redirect to setup if not complete and not already on setup page
+        if (!data.setupComplete && location !== '/setup') {
+          setLocation('/setup');
+        }
       } catch (error) {
         setSetupComplete(false);
+        if (location !== '/setup') {
+          setLocation('/setup');
+        }
       }
     };
 
     checkSetupStatus();
-  }, []);
+  }, [location, setLocation]);
 
   if (setupComplete === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
       </div>
-    );
-  }
-
-  if (!setupComplete) {
-    // Redirect to /setup if not already there
-    if (window.location.pathname !== '/setup') {
-      window.location.href = '/setup';
-      return null;
-    }
-    
-    return (
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Setup />
-          </TooltipProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
     );
   }
 
@@ -121,7 +112,19 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <Toaster />
-          <AuthenticatedApp />
+          {!setupComplete ? (
+            <Switch>
+              <Route path="/setup" component={Setup} />
+              <Route path="*">
+                {() => {
+                  setLocation('/setup');
+                  return null;
+                }}
+              </Route>
+            </Switch>
+          ) : (
+            <AuthenticatedApp />
+          )}
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
