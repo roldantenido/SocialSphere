@@ -130,14 +130,17 @@ export class DatabaseStorage implements IStorage {
 
   private async initializeSampleDataIfReady() {
     try {
-      // Check if we're in development mode with DATABASE_URL (Option 1)
+      // In development mode with DATABASE_URL, initialize sample data
       if (process.env.NODE_ENV === 'development' && process.env.DATABASE_URL) {
         console.log('🟢 Development database detected, initializing sample data');
-        await this.initializeSampleData();
+        const db = await this.getDB();
+        if (db) {
+          await this.initializeSampleData();
+        }
         return;
       }
 
-      // For production deployment, only initialize if setup is complete (Option 2)
+      // For production, only initialize if setup is complete
       const { isSetupComplete } = await import('./setup');
       if (!(await isSetupComplete())) {
         console.log('⚠️ Setup not complete, skipping sample data initialization');
@@ -872,8 +875,7 @@ export class DatabaseStorage implements IStorage {
         }
       })
       .from(groups)
-      .innerJoin(users, eq(groups.createdBy, users.id))
-      .where(eq(groups.isPrivate, false))
+      .innerJoin(users, eq(groups.createdBy, users.id))      .where(eq(groups.isPrivate, false))
       .orderBy(desc(groups.membersCount));
 
     return allGroups;
