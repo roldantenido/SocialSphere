@@ -90,6 +90,12 @@ function App() {
   }
 
   if (!setupComplete) {
+    // Redirect to /setup if not already there
+    if (window.location.pathname !== '/setup') {
+      window.location.href = '/setup';
+      return null;
+    }
+    
     return (
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
