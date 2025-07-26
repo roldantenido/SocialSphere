@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useQuery } from "@tanstack/react-query";
 import { getAuthHeaders, authStorage } from "./lib/auth";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Home from "@/pages/home";
@@ -17,7 +17,7 @@ import Gaming from "@/pages/gaming";
 import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import DockerWizard from "@/pages/docker-wizard";
-import Discover from "@/pages/discover";
+import Setup from "@/pages/setup";
 
 function AuthenticatedApp() {
   const { data: user, isLoading } = useQuery({
@@ -65,6 +65,43 @@ function AuthenticatedApp() {
 }
 
 function App() {
+  const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkSetupStatus = async () => {
+      try {
+        const response = await fetch('/api/setup/status');
+        const data = await response.json();
+        setSetupComplete(data.setupComplete);
+      } catch (error) {
+        setSetupComplete(false);
+      }
+    };
+
+    checkSetupStatus();
+  }, []);
+
+  if (setupComplete === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!setupComplete) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Setup />
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    );
+  }
+
   useEffect(() => {
     // Check if user has a session on app start
     const sessionId = authStorage.getSessionId();
