@@ -18,8 +18,22 @@ import Profile from "@/pages/profile";
 import Admin from "@/pages/admin";
 import DockerWizard from "@/pages/docker-wizard";
 import Discover from "@/pages/discover";
+import Setup from "@/pages/setup";
 
 function AuthenticatedApp() {
+  // Check setup status first
+  const { data: setupStatus, isLoading: setupLoading } = useQuery({
+    queryKey: ["/api/setup/status"],
+    queryFn: async () => {
+      const response = await fetch("/api/setup/status");
+      if (!response.ok) {
+        throw new Error("Failed to check setup status");
+      }
+      return response.json();
+    },
+    retry: false,
+  });
+
   const { data: user, isLoading } = useQuery({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
@@ -34,14 +48,20 @@ function AuthenticatedApp() {
       return userData;
     },
     retry: false,
+    enabled: setupStatus?.isConfigured === true, // Only run if app is configured
   });
 
-  if (isLoading) {
+  if (setupLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
       </div>
     );
+  }
+
+  // Show setup page if app is not configured
+  if (!setupStatus?.isConfigured) {
+    return <Setup />;
   }
 
   if (!user) {

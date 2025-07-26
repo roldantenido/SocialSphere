@@ -110,12 +110,18 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   constructor() {
-    // Initialize with some sample users
+    // Initialize with some sample users only if configured
     this.initializeSampleData();
   }
 
   private async initializeSampleData() {
     try {
+      // Skip if not configured
+      if (!process.env.DATABASE_URL) {
+        console.log('Database not configured, skipping sample data initialization');
+        return;
+      }
+
       // Check if users already exist
       const existingUsers = await db.select().from(users).limit(1);
       if (existingUsers.length > 0) {

@@ -151,10 +151,13 @@ jobs:
         
         # Create .env.example
         cat > deployment-artifacts/.env.example << 'EOF'
-        # Database Configuration
+        # Database Configuration (will be configured via setup page)
         POSTGRES_DB=social_media
         POSTGRES_USER=postgres
         POSTGRES_PASSWORD=your_secure_password_here
+        
+        # Note: On first deployment, the application will show a setup page
+        # to configure database connection and create admin user
         EOF
 
     - name: Upload deployment artifacts

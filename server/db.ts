@@ -66,8 +66,20 @@ async function ensureDatabaseExists() {
   }
 }
 
-// Initialize database setup
-ensureDatabaseExists().catch(console.error);
+// Initialize database setup only if configured
+if (process.env.DATABASE_URL) {
+  ensureDatabaseExists().catch(console.error);
+}
 
-export const pool = new Pool(dbConfig);
+// Create pool based on configuration
+let poolConfig = dbConfig;
+if (process.env.DATABASE_URL) {
+  // Use configured DATABASE_URL if available
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: false
+  } as any;
+}
+
+export const pool = new Pool(poolConfig);
 export const db = drizzle(pool, { schema });

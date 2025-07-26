@@ -9,6 +9,8 @@ import {
   insertFriendshipSchema 
 } from "@shared/schema";
 import { z } from "zod";
+import { isAppConfigured, getSetupStatus, saveAppConfig } from "./setup";
+import { setupSchema, type SetupData } from "@shared/setup";
 
 // Extend Express Request interface to include userId
 declare global {
@@ -56,6 +58,58 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup status endpoint (always available)
+  app.get("/api/setup/status", (req, res) => {
+    res.json(getSetupStatus());
+  });
+
+  // Setup endpoint
+  app.post("/api/setup", async (req, res) => {
+    try {
+      if (isAppConfigured()) {
+        return res.status(400).json({ error: "Application is already configured" });
+      }
+
+      const setupData = setupSchema.parse(req.body);
+      
+      // Save configuration
+      saveAppConfig(setupData);
+
+      // Create admin user
+      await storage.createUser({
+        username: setupData.adminUsername,
+        email: "admin@example.com",
+        password: setupData.adminPassword,
+        firstName: "Admin",
+        lastName: "User",
+        isAdmin: true,
+      });
+
+      res.json({ success: true, message: "Setup completed successfully" });
+    } catch (error) {
+      console.error("Setup error:", error);
+      res.status(400).json({ error: "Setup failed: " + (error as Error).message });
+    }
+  });
+
+  // Middleware to check if app is configured (for API routes only)
+  app.use("/api", (req, res, next) => {
+    // Skip setup routes
+    if (req.path.startsWith("/setup")) {
+      return next();
+    }
+
+    // Check if app is configured
+    if (!isAppConfigured()) {
+      return res.status(503).json({ 
+        error: "Application not configured", 
+        setupRequired: true 
+      });
+    }
+
+    next();
+  });
+
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
