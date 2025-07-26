@@ -1,17 +1,8 @@
+
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 import { isSetupComplete } from './setup';
-
-// Default configuration - will be overridden after setup
-const dbConfig = {
-  host: '0.0.0.0',
-  port: 5432,
-  database: 'social_media_app',
-  user: 'social_user',
-  password: 'social_pass_2024',
-  ssl: false
-};
 
 let pool: Pool | null = null;
 let db: any = null;
@@ -21,8 +12,11 @@ export async function initializeDatabase() {
     throw new Error('Setup not completed');
   }
 
-  if (!pool) {
-    pool = new Pool(dbConfig);
+  if (!pool && process.env.DATABASE_URL) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: false
+    });
     db = drizzle(pool, { schema });
   }
 
